@@ -1,0 +1,16 @@
+file(REMOVE_RECURSE "${DESTINATION}")
+file(COPY "${SOURCE}/" DESTINATION "${DESTINATION}")
+
+file(GLOB_RECURSE fixture_files LIST_DIRECTORIES false "${DESTINATION}/*.fixture")
+foreach(fixture_file IN LISTS fixture_files)
+    string(REGEX REPLACE "\\.fixture$" "" real_name "${fixture_file}")
+    file(RENAME "${fixture_file}" "${real_name}")
+endforeach()
+
+file(GLOB_RECURSE dotted_files LIST_DIRECTORIES false "${DESTINATION}/dot-*")
+foreach(dotted_file IN LISTS dotted_files)
+    get_filename_component(folder "${dotted_file}" DIRECTORY)
+    get_filename_component(name "${dotted_file}" NAME)
+    string(REGEX REPLACE "^dot-" "." real_name "${name}")
+    file(RENAME "${dotted_file}" "${folder}/${real_name}")
+endforeach()
