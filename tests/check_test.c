@@ -57,6 +57,8 @@ static const snapshot_case snapshot_cases[] = {
     {"org-repos-private", "intisy.snapshot", "intisy/records"},
     {"org-repos-gone", "intisy.snapshot", "intisy/docs"},
     {"org-repos-reordered", "intisy.snapshot", "intisy/docs"},
+    {"org-records-public", "intisy.snapshot", "intisy/docs"},
+    {"org-records-private", "intisy.snapshot", "intisy/records"},
 };
 
 static const fixture_case fixture_cases[] = {
@@ -79,6 +81,7 @@ static const fixture_case fixture_cases[] = {
      "warned docs/README.md:3 prose-to-write the text to write is a placeholder for a person to replace\n"
      SNAPSHOT_ABSENT},
     {"kind-not-allowed", 1,
+     "refused docs/CLAUDE.md:0 kind-not-allowed CLAUDE.md is a record, and a repo docs tree holds no records\n"
      "refused docs/TASKS.md:0 kind-not-allowed TASKS.md is a record, and a repo docs tree holds no records\n"
      "refused docs/data.json:0 kind-not-allowed a descent tree holds only README.md, prose .md files and folders\n"
      SNAPSHOT_ABSENT},
@@ -170,6 +173,16 @@ static const fixture_case fixture_cases[] = {
      "warned .:0 staleness-skipped the clone is shallow, so its commit dates cannot show a stale source doc and "
      "source-doc-stale was skipped\n" SNAPSHOT_ABSENT},
     {"org-repos-private", 0, ""},
+    {"org-records-public", 1,
+     "refused CLAUDE.md:0 record-in-public-tree CLAUDE.md is a record, and a public org docs tree holds none; records "
+     "live in the org's private records repo\n"
+     "refused RULES.md:0 record-in-public-tree RULES.md is a record, and a public org docs tree holds none; records "
+     "live in the org's private records repo\n"
+     "refused TASKS.md:0 record-in-public-tree TASKS.md is a record, and a public org docs tree holds none; records "
+     "live in the org's private records repo\n"
+     "refused plans:0 record-in-public-tree plans/ is a record, and a public org docs tree holds none; records live "
+     "in the org's private records repo\n"},
+    {"org-records-private", 0, ""},
 };
 
 static const fixture_case *find_case(const char *name) {

@@ -29,7 +29,7 @@ The checker, `tarn-check`. `check_tree` reads the version file to tell a repo do
 - [readme.h](../../../src/readme.h) - the children a README must list and where the README sits
 - [report.c](../../../src/report.c) - the report: its lines, their format, the warned lines alone, the exit code, and the one `prose-to-write` warning every module adds
 - [report.h](../../../src/report.h) - a finding and the report that holds them
-- [rules.c](../../../src/rules.c) - the kinds a descent folder may hold, the code extensions (shared with the staleness check), and the size budget
+- [rules.c](../../../src/rules.c) - the kinds a descent folder may hold (the records list as `records.md` names it, refused in a public org tree), the code extensions (shared with the staleness check), and the size budget
 - [rules.h](../../../src/rules.h) - the kind of an entry and the rules read from it
 - [snapshot.c](../../../src/snapshot.c) - the repos snapshot: reading its lines, refusing a malformed or repeated one, and finding a repo ignoring case
 - [snapshot.h](../../../src/snapshot.h) - a snapshot line, the snapshot, and the name helpers the rules share

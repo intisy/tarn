@@ -4,7 +4,9 @@
 
 #include <string.h>
 
-static const char *const record_files[] = {"TASKS.md", "DECISIONS.md", "HANDOFF.md", "FAQ.md", "RULES.md"};
+/** The records half, exactly as docs/definitions/records.md rule 1 names it; change both together. */
+static const char *const record_files[] = {"TASKS.md", "DECISIONS.md", "HANDOFF.md", "FAQ.md", "RULES.md",
+                                           "CLAUDE.md"};
 static const char *const record_folders[] = {"plans", "specs", "records"};
 static const char *const code_extensions[] = {".c",  ".h",  ".cpp", ".hpp", ".ts", ".js", ".mjs", ".java",
                                               ".kt", ".rs", ".go",  ".py",  ".lua", ".sh", ".ps1", ".cmake"};
@@ -30,8 +32,9 @@ static int is_ignored_org_root_entry(const directory_entry *entry) {
     return entry->name[0] == '.' || strcmp(entry->name, "LICENSE") == 0 || strcmp(entry->name, "VERSION") == 0;
 }
 
-static int is_org_root_record(const directory_entry *entry) {
-    return is_record(entry) || (!entry->is_directory && strcmp(entry->name, "CLAUDE.md") == 0);
+/** Without a snapshot the visibility is unknown, so records pass; a public tree is refused them only with one. */
+static int is_public_tree(const check_context *context) {
+    return context->self != NULL && context->self->visibility == VISIBILITY_PUBLIC;
 }
 
 static entry_kind classify_at_root(const check_context *context, const directory_entry *entry, int *decided) {
@@ -40,8 +43,8 @@ static entry_kind classify_at_root(const check_context *context, const directory
         if (is_ignored_org_root_entry(entry)) {
             return ENTRY_SKIPPED;
         }
-        if (is_org_root_record(entry)) {
-            return ENTRY_RECORD;
+        if (is_record(entry)) {
+            return is_public_tree(context) ? ENTRY_RECORD_IN_PUBLIC_TREE : ENTRY_RECORD;
         }
         if (entry->is_directory && strcmp(entry->name, "source") == 0) {
             return ENTRY_SOURCE_IN_ORG;
@@ -78,7 +81,7 @@ entry_kind rules_classify(const check_context *context, const char *folder, cons
 
 int rules_is_refused(entry_kind kind) {
     return kind == ENTRY_NOT_DESCENT_KIND || kind == ENTRY_RECORD_IN_REPO || kind == ENTRY_RECORD_BELOW_ROOT ||
-           kind == ENTRY_SOURCE_IN_ORG;
+           kind == ENTRY_RECORD_IN_PUBLIC_TREE || kind == ENTRY_SOURCE_IN_ORG;
 }
 
 int rules_is_readme_child(entry_kind kind) {
@@ -96,6 +99,12 @@ void rules_report_refused(const check_context *context, const char *path, const 
     case ENTRY_RECORD_BELOW_ROOT:
         report_add(context->out, SEVERITY_REFUSED, path, 0, "kind-not-allowed",
                    "%s%s is a record, and records sit at the root of an org docs tree only", entry->name, slash);
+        break;
+    case ENTRY_RECORD_IN_PUBLIC_TREE:
+        report_add(context->out, SEVERITY_REFUSED, path, 0, "record-in-public-tree",
+                   "%s%s is a record, and a public org docs tree holds none; records live in the org's private "
+                   "records repo",
+                   entry->name, slash);
         break;
     case ENTRY_SOURCE_IN_ORG:
         report_add(context->out, SEVERITY_REFUSED, path, 0, "kind-not-allowed",
