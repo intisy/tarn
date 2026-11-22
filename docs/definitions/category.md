@@ -42,7 +42,9 @@ over as `tarn-check --snapshot <file> --repository <owner>/<name>`, where the se
    of the repo being checked is read from its own line.
 3. A doc names a repo when two adjacent segments of a slash-separated word in its text spell `<owner>/<name>`. So
    `<owner>/<name>` alone names it, and so does a path into or through it (`<owner>/<name>/plans/x.md`,
-   `GitHub/<owner>/<name>`) and any address of it (`https://github.com/<owner>/<name>?tab=readme`). Each segment is
+   `GitHub/<owner>/<name>`) and any address of it (`https://github.com/<owner>/<name>?tab=readme`), clone URLs
+   included: a `.git` ending the name is not part of it, and `:` separates words, so
+   `https://github.com/<owner>/<name>.git` and `git@github.com:<owner>/<name>.git` name it. Each segment is
    whole: `<owner>/<name>-more` and `my-<owner>/<name>` name nothing, and a sentence's closing full stop is not part
    of the word. Names are compared ignoring case, as GitHub does. Fenced code blocks and inline code are read too,
    since a name in code is published all the same; only the link rules skip code.

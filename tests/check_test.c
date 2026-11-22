@@ -146,7 +146,8 @@ static const fixture_case fixture_cases[] = {
      "refused docs/VERSION:1 version-unknown declares tarn 2, and this checker knows version 1 only\n"},
     {"boundary-public-names-private", 1,
      NAMES_SECRET("3") NAMES_SECRET("4") NAMES_SECRET("5") NAMES_SECRET("7") NAMES_SECRET("8")
-         NAMES_SECRET("9") NAMES_SECRET("10") NAMES_SECRET("11") NAMES_SECRET("12") NAMES_SECRET("15")},
+         NAMES_SECRET("9") NAMES_SECRET("10") NAMES_SECRET("11") NAMES_SECRET("12") NAMES_SECRET("15")
+             NAMES_SECRET("17") NAMES_SECRET("18")},
     {"boundary-private-names-public", 0, ""},
     {"boundary-link-into-nonstandard", 1, LINKS_OLD("3") LINKS_OLD("4") LINKS_OLD("9") LINKS_OLD("10")},
     {"boundary-link-into-itself", 0, ""},

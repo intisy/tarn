@@ -3,7 +3,7 @@ The checker, `tarn-check`. `check_tree` reads the version file to tell a repo do
 <!-- generated: source-children -->
 - [adopt.c](../../../src/adopt.c) - `adopt`: the plan of a repo or an org, the README skeletons, the workflow caller's one template, and writing only the files that do not exist yet
 - [adopt.h](../../../src/adopt.h) - `adopt_tree`, its options and outcome, and the caller text the tests compare with
-- [boundary.c](../../../src/boundary.c) - the two snapshot rules: a public tree naming a private repo by any two adjacent segments of a path (in code too), and a GitHub link into a repo that does not follow tarn
+- [boundary.c](../../../src/boundary.c) - the two snapshot rules: a public tree naming a private repo by any two adjacent segments of a path (in code too, and with a clone URL's `.git` dropped), and a GitHub link into a repo that does not follow tarn
 - [boundary.h](../../../src/boundary.h) - the snapshot check of one document
 - [check.c](../../../src/check.c) - `check_tree`: the version files judged against the newest version, the tree kind, the checked repo's line in the snapshot, the order of the checks (blocks first, then the walk, then the drift checks), and the `snapshot-absent` warning
 - [check.h](../../../src/check.h) - `check_tree`, its options (the newest version to judge against among them, which tests set and the command line does not) and its results, the opening and closing of the context every check shares (and the opening adoption uses, before any version file exists), the question whether a version file already decides the tree's kind, and whether one is not a tarn version file at all
