@@ -2,6 +2,7 @@
 
 #include "context.h"
 #include "directory.h"
+#include "generate.h"
 #include "path.h"
 #include "walk.h"
 
@@ -106,28 +107,42 @@ static int decide_tree_kind(check_context *context) {
     return 0;
 }
 
-int check_tree(const char *repo_root, const check_options *options, report *out) {
-    check_context context;
-    (void)options;
+int check_context_open(const char *repo_root, report *out, check_context *context) {
     if (!directory_is_directory(repo_root)) {
         return -1;
     }
-    memset(&context, 0, sizeof context);
-    context.repo_root = repo_root;
-    context.out = out;
-    string_list_init(&context.code_folders);
-    if (!decide_tree_kind(&context)) {
+    memset(context, 0, sizeof *context);
+    context->repo_root = repo_root;
+    context->out = out;
+    string_list_init(&context->code_folders);
+    if (!decide_tree_kind(context)) {
         return 0;
     }
-    ignore_load(repo_root, &context.ignore);
-    if (context.kind == TREE_REPO) {
-        walk_find_code_folders(&context);
+    ignore_load(repo_root, &context->ignore);
+    if (context->kind == TREE_REPO) {
+        walk_find_code_folders(context);
     }
-    walk_descent_tree(&context);
-    if (context.kind == TREE_REPO) {
-        walk_check_mirror_complete(&context);
+    return 1;
+}
+
+void check_context_close(check_context *context) {
+    ignore_free(&context->ignore);
+    string_list_free(&context->code_folders);
+}
+
+int check_tree(const char *repo_root, const check_options *options, report *out) {
+    check_context context;
+    int opened = check_context_open(repo_root, out, &context);
+    if (opened < 0) {
+        return -1;
     }
-    ignore_free(&context.ignore);
-    string_list_free(&context.code_folders);
+    if (opened > 0) {
+        generate_blocks(&context, options->write);
+        walk_descent_tree(&context);
+        if (context.kind == TREE_REPO) {
+            walk_check_mirror_complete(&context);
+        }
+    }
+    check_context_close(&context);
     return 0;
 }

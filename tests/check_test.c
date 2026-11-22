@@ -60,6 +60,25 @@ static const fixture_case fixture_cases[] = {
      "docs tree only\n"
      "refused source:0 kind-not-allowed source/ is the source mirror of a repo docs tree, and an org docs tree has "
      "none\n"},
+    {"generated-stale", 1,
+     "refused docs/source/src/README.md:3 generated-block-stale the block differs from the text tarn-check "
+     "generates, and --write rewrites it\n"},
+    {"generated-current", 0,
+     "warned docs/source/src/README.md:5 prose-to-write the text to write is a placeholder for a person to replace\n"},
+    {"generated-kind-unknown", 1,
+     "refused docs/README.md:3 generated-kind-unknown tarn-index is not a generated kind of version 1\n"},
+    {"generated-unterminated", 1,
+     "refused docs/README.md:3 generated-unterminated the block has no end marker\n"},
+    {"generated-marker-unmatched", 1,
+     "refused docs/README.md:4 generated-marker-unmatched an end marker has no start marker\n"},
+    {"generated-nested", 1,
+     "refused docs/README.md:4 generated-nested a block starts inside the block that started at line 3\n"},
+    {"generated-misplaced", 1,
+     "refused docs/README.md:3 generated-kind-misplaced source-children belongs in the README of a folder under "
+     "docs/source\n"},
+    {"generated-org-repos", 0,
+     "warned README.md:4 prose-to-write the text to write is a placeholder for a person to replace\n"},
+    {"generated-fenced", 0, ""},
     {"version-unknown", 1,
      "refused docs/VERSION:1 version-unknown declares tarn 2, and this checker knows version 1 only\n"},
 };
@@ -88,7 +107,7 @@ static char *join_tree_path(const char *trees, const char *name) {
 }
 
 static int run_case(const char *trees, const fixture_case *expected) {
-    check_options options = {NULL, 0};
+    check_options options = {NULL, 0, 0};
     report out;
     char *root = join_tree_path(trees, expected->name);
     char *actual;

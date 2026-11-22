@@ -55,7 +55,7 @@ void walk_find_code_folders(check_context *context) {
     string_list_sort(&context->code_folders);
 }
 
-static const char *mirrored_folder(const check_context *context, const char *folder) {
+const char *walk_mirrored_folder(const check_context *context, const char *folder) {
     size_t root_length = strlen(source_root);
     if (context->kind != TREE_REPO || strncmp(folder, source_root, root_length) != 0) {
         return NULL;
@@ -193,7 +193,7 @@ static void walk_entries(check_context *context, const char *folder, const direc
 }
 
 static void walk_folder(check_context *context, const char *folder) {
-    const char *mirrored = mirrored_folder(context, folder);
+    const char *mirrored = walk_mirrored_folder(context, folder);
     directory_listing listing;
     entry_kind *kinds;
     size_t index;

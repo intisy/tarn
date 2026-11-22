@@ -158,8 +158,23 @@ int text_is_size_exception(const char *line) {
     return is_comment_with_prefix(line, "<!-- size: ");
 }
 
+int text_is_generated_end(const char *line) {
+    return strcmp(line, "<!-- end generated -->") == 0;
+}
+
 int text_is_generated_marker(const char *line) {
-    return strcmp(line, "<!-- end generated -->") == 0 || is_comment_with_prefix(line, "<!-- generated: ");
+    return text_is_generated_end(line) || is_comment_with_prefix(line, "<!-- generated: ");
+}
+
+char *text_generated_what(const char *line) {
+    static const char prefix[] = "<!-- generated: ";
+    static const char suffix[] = " -->";
+    size_t what_length;
+    if (!is_comment_with_prefix(line, prefix)) {
+        return NULL;
+    }
+    what_length = strlen(line) - (sizeof prefix - 1) - (sizeof suffix - 1);
+    return memory_copy_bytes(line + sizeof prefix - 1, what_length);
 }
 
 static size_t backtick_run(const char *line, size_t position) {

@@ -18,6 +18,25 @@ foreach(case IN LISTS TARN_CASES)
     set_tests_properties(check/${case} PROPERTIES FIXTURES_REQUIRED trees)
 endforeach()
 
+add_executable(generate_test generate_test.c)
+target_link_libraries(generate_test PRIVATE tarn_check_objects)
+tarn_strict_warnings(generate_test)
+
+set(TARN_WRITE_TREES ${CMAKE_CURRENT_BINARY_DIR}/write-trees)
+add_test(NAME prepare-write-trees
+    COMMAND ${CMAKE_COMMAND}
+        -DSOURCE=${CMAKE_CURRENT_SOURCE_DIR}/write-trees
+        -DDESTINATION=${TARN_WRITE_TREES}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/prepare_trees.cmake)
+set_tests_properties(prepare-write-trees PROPERTIES FIXTURES_SETUP write-trees)
+
+file(GLOB TARN_WRITE_CASES LIST_DIRECTORIES true CONFIGURE_DEPENDS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/write-trees
+    ${CMAKE_CURRENT_SOURCE_DIR}/write-trees/*)
+foreach(case IN LISTS TARN_WRITE_CASES)
+    add_test(NAME generate/${case} COMMAND generate_test ${TARN_WRITE_TREES} ${case})
+    set_tests_properties(generate/${case} PROPERTIES FIXTURES_REQUIRED write-trees)
+endforeach()
+
 function(tarn_expect_exit name expected argument)
     add_test(NAME cli/${name}
         COMMAND ${CMAKE_COMMAND}
