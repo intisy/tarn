@@ -128,7 +128,7 @@ jobs:
             echo "$name $visibility $follows" >> "$snapshot"
           done < "$RUNNER_TEMP/repos.txt"
           echo "TARN_SNAPSHOT=$snapshot" >> "$GITHUB_ENV"
-          cat "$snapshot"
+          echo "The snapshot lists $(wc -l < "$snapshot") repos."
 
       - name: Check
         if: ${{ inputs.mode == 'check' }}

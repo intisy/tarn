@@ -154,7 +154,7 @@ static int run(const command_line *parsed) {
     return exit_code;
 }
 
-static int report_adopt_refusal(const adopt_command *parsed, int result) {
+static int report_adopt_refusal(const adopt_command *parsed, int result, const adopt_outcome *outcome) {
     int as_repo = parsed->options.kind == ADOPT_REPO;
     if (result == ADOPT_NOT_A_FOLDER) {
         fprintf(stderr, "tarn-check: %s is not a folder\n%s", parsed->repo_root, usage);
@@ -164,6 +164,16 @@ static int report_adopt_refusal(const adopt_command *parsed, int result) {
         fprintf(stderr, "tarn-check: the snapshot %s does not list %s\n", parsed->snapshot_path,
                 parsed->options.repository);
         return EXIT_BAD_USAGE;
+    }
+    if (result == ADOPT_VERSION_FOREIGN) {
+        fprintf(stderr, "tarn-check: %s/%s exists and does not read tarn <n>, so it cannot become the version file\n",
+                parsed->repo_root, outcome->blocking);
+        return EXIT_NOT_ADOPTED;
+    }
+    if (result == ADOPT_CASE_DIFFERS) {
+        fprintf(stderr, "tarn-check: %s/%s exists only under another case, so adoption cannot write into it\n",
+                parsed->repo_root, outcome->blocking);
+        return EXIT_NOT_ADOPTED;
     }
     fprintf(stderr, "tarn-check: %s is already %s, so it cannot adopt as %s\n", parsed->repo_root,
             as_repo ? "an org docs tree (VERSION)" : "a repo docs tree (docs/VERSION)", as_repo ? "a repo" : "an org");
@@ -178,14 +188,15 @@ static int run_adopt(const adopt_command *parsed) {
     adopt_outcome_init(&outcome);
     result = adopt_tree(parsed->repo_root, &parsed->options, &outcome);
     if (result != ADOPT_DONE && result != ADOPT_UNWRITABLE) {
+        exit_code = report_adopt_refusal(parsed, result, &outcome);
         adopt_outcome_free(&outcome);
-        return report_adopt_refusal(parsed, result);
+        return exit_code;
     }
     for (index = 0; index < outcome.lines.count; index++) {
         printf("%s\n", outcome.lines.items[index]);
     }
     if (result == ADOPT_UNWRITABLE) {
-        fprintf(stderr, "tarn-check: %s cannot be written, and no file after it was\n", outcome.unwritable);
+        fprintf(stderr, "tarn-check: %s cannot be written, and no file after it was\n", outcome.blocking);
         exit_code = EXIT_NOT_ADOPTED;
     }
     adopt_outcome_free(&outcome);

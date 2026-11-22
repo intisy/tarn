@@ -18,11 +18,12 @@ typedef struct {
 
 /**
  * One line per planned file, `create <path>` or `keep <path>`, then for an org one `does-not-follow <owner>/<name>`
- * line per repo its org-repos block marks as not following. unwritable names the first file a write failed on.
+ * line per repo its org-repos block marks as not following. blocking names the path a refusal or a failed write is
+ * about: the file a write failed on, the version file that is not tarn's, or the folder that differs only in case.
  */
 typedef struct {
     string_list lines;
-    char *unwritable;
+    char *blocking;
 } adopt_outcome;
 
 enum {
@@ -30,7 +31,9 @@ enum {
     ADOPT_NOT_A_FOLDER = -1,
     ADOPT_REPOSITORY_UNKNOWN = -2,
     ADOPT_OTHER_KIND_DECLARED = -3,
-    ADOPT_UNWRITABLE = -4
+    ADOPT_UNWRITABLE = -4,
+    ADOPT_VERSION_FOREIGN = -5,
+    ADOPT_CASE_DIFFERS = -6
 };
 
 void adopt_outcome_init(adopt_outcome *outcome);

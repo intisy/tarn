@@ -40,6 +40,8 @@ static const char caller_template[] =
     "    with:\n"
     "      standard-ref: <standard-ref>\n"
     "      mode: check\n"
+    "    secrets:\n"
+    "      envPAT: ${{ secrets.TARN_TOKEN }}\n"
     "\n"
     "  warn:\n"
     "    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}\n"
@@ -47,7 +49,9 @@ static const char caller_template[] =
     "    with:\n"
     "      standard-ref: <standard-ref>\n"
     "      mode: warn\n"
-    "      default-branch: ${{ github.ref_name }}\n";
+    "      default-branch: ${{ github.ref_name }}\n"
+    "    secrets:\n"
+    "      envPAT: ${{ secrets.TARN_TOKEN }}\n";
 
 static const char source_folder_text[] = "the source mirror: one doc per source folder that holds code";
 
@@ -65,17 +69,19 @@ typedef struct {
 typedef struct {
     planned_file *items;
     size_t count;
+    /** The first planned folder that exists only under another case, which no file can be written into. */
+    char *case_differing_folder;
 } adoption_plan;
 
 void adopt_outcome_init(adopt_outcome *outcome) {
     string_list_init(&outcome->lines);
-    outcome->unwritable = NULL;
+    outcome->blocking = NULL;
 }
 
 void adopt_outcome_free(adopt_outcome *outcome) {
     string_list_free(&outcome->lines);
-    free(outcome->unwritable);
-    outcome->unwritable = NULL;
+    free(outcome->blocking);
+    outcome->blocking = NULL;
 }
 
 static void builder_start(text_builder *builder) {
@@ -157,10 +163,31 @@ static char *child_line(const char *name, const char *text) {
     return format_text("- [%s](%s) - %s", name, name, text);
 }
 
+/** The topmost folder of path that exists only under another case, or NULL when none does. */
+static char *find_case_differing_folder(const char *repo_root, const char *path) {
+    char *folder = path_parent(path);
+    char *found = NULL;
+    while (folder[0] != '\0') {
+        char *parent = path_parent(folder);
+        if (path_lookup_exact(repo_root, folder) == PATH_CASE_DIFFERS) {
+            free(found);
+            found = memory_copy_string(folder);
+        }
+        free(folder);
+        folder = parent;
+    }
+    free(folder);
+    return found;
+}
+
 /** Adds the file to the plan, kept when the repo already holds an entry of that name in any case. */
 static void plan_add(const check_context *context, adoption_plan *plan, const char *path, char *content) {
     planned_file *file;
-    if (path_lookup_exact(context->repo_root, path) != PATH_MISSING) {
+    path_state state = path_lookup_exact(context->repo_root, path);
+    if (state == PATH_CASE_DIFFERS && plan->case_differing_folder == NULL) {
+        plan->case_differing_folder = find_case_differing_folder(context->repo_root, path);
+    }
+    if (state != PATH_MISSING) {
         free(content);
         content = NULL;
     }
@@ -177,6 +204,7 @@ static void plan_free(adoption_plan *plan) {
         free(plan->items[index].content);
     }
     free(plan->items);
+    free(plan->case_differing_folder);
 }
 
 static int is_mirrored_doc_folder(const check_context *context, const char *mirrored, const directory_entry *entry) {
@@ -273,6 +301,40 @@ static void plan_docs_readme(const check_context *context, adoption_plan *plan) 
     string_list_free(&names);
 }
 
+static void plan_folder_readme(const check_context *context, adoption_plan *plan, const char *folder) {
+    char *readme = path_join(folder, "README.md");
+    string_list names;
+    string_list lines;
+    string_list_init(&names);
+    string_list_init(&lines);
+    collect_child_names(context, folder, NULL, &names);
+    child_lines_for(&names, placeholder_for, &lines);
+    plan_add(context, plan, readme, readme_skeleton(&lines, NULL, NULL));
+    string_list_free(&lines);
+    string_list_free(&names);
+    free(readme);
+}
+
+/** Plans a README for every descent folder below folder, the source mirror aside, which plan_source_readme covers. */
+static void plan_descent_subfolders(const check_context *context, adoption_plan *plan, const char *folder) {
+    char *on_disk = path_on_disk(context->repo_root, folder);
+    directory_listing listing;
+    size_t index;
+    if (directory_list(on_disk, &listing) == 0) {
+        for (index = 0; index < listing.count; index++) {
+            char *child = path_join(folder, listing.entries[index].name);
+            if (rules_classify(context, folder, &listing.entries[index]) == ENTRY_FOLDER &&
+                strcmp(child, "docs/source") != 0) {
+                plan_folder_readme(context, plan, child);
+                plan_descent_subfolders(context, plan, child);
+            }
+            free(child);
+        }
+        directory_listing_free(&listing);
+    }
+    free(on_disk);
+}
+
 static void plan_source_readme(const check_context *context, adoption_plan *plan, const char *mirrored) {
     char *folder = path_join("docs/source", mirrored);
     char *readme = path_join(folder, "README.md");
@@ -300,6 +362,7 @@ static void plan_repo(const check_context *context, const char *standard_ref, ad
     size_t index;
     plan_add(context, plan, "docs/VERSION", version_text());
     plan_docs_readme(context, plan);
+    plan_descent_subfolders(context, plan, "docs");
     for (index = 0; index < context->code_folders.count; index++) {
         plan_source_readme(context, plan, context->code_folders.items[index]);
     }
@@ -321,6 +384,7 @@ static void plan_org(const check_context *context, const char *standard_ref, ado
     child_lines_for(&names, placeholder_for, &lines);
     org_repos_lines(context, &no_lines, &block);
     plan_add(context, plan, "README.md", readme_skeleton(&lines, "org-repos", &block));
+    plan_descent_subfolders(context, plan, "");
     plan_add(context, plan, ADOPT_CALLER_PATH, adopt_caller_text(standard_ref));
     string_list_free(&block);
     string_list_free(&no_lines);
@@ -396,7 +460,7 @@ static int write_plan(const char *repo_root, const adoption_plan *plan, adopt_ou
     for (index = 0; index < plan->count; index++) {
         const planned_file *file = &plan->items[index];
         if (file->content != NULL && !write_planned_file(repo_root, file)) {
-            outcome->unwritable = memory_copy_string(file->path);
+            outcome->blocking = memory_copy_string(file->path);
             return ADOPT_UNWRITABLE;
         }
     }
@@ -404,12 +468,17 @@ static int write_plan(const char *repo_root, const adoption_plan *plan, adopt_ou
 }
 
 static int run_adoption(check_context *context, const adopt_options *options, adopt_outcome *outcome) {
-    adoption_plan plan = {NULL, 0};
+    adoption_plan plan = {NULL, 0, NULL};
     int result = ADOPT_DONE;
     if (context->kind == TREE_REPO) {
         plan_repo(context, options->standard_ref, &plan);
     } else {
         plan_org(context, options->standard_ref, &plan);
+    }
+    if (plan.case_differing_folder != NULL) {
+        outcome->blocking = memory_copy_string(plan.case_differing_folder);
+        plan_free(&plan);
+        return ADOPT_CASE_DIFFERS;
     }
     describe_plan(&plan, outcome);
     if (context->kind == TREE_ORG) {
@@ -431,6 +500,7 @@ static const snapshot_repo *find_self(const adopt_options *options) {
 
 int adopt_tree(const char *repo_root, const adopt_options *options, adopt_outcome *outcome) {
     tree_kind kind = options->kind == ADOPT_REPO ? TREE_REPO : TREE_ORG;
+    const char *version_path = kind == TREE_REPO ? "docs/VERSION" : "VERSION";
     const snapshot_repo *self = find_self(options);
     report unused;
     check_context context;
@@ -443,6 +513,10 @@ int adopt_tree(const char *repo_root, const adopt_options *options, adopt_outcom
     }
     if (check_version_decides(repo_root, kind == TREE_REPO ? TREE_ORG : TREE_REPO)) {
         return ADOPT_OTHER_KIND_DECLARED;
+    }
+    if (check_version_is_foreign(repo_root, version_path)) {
+        outcome->blocking = memory_copy_string(version_path);
+        return ADOPT_VERSION_FOREIGN;
     }
     report_init(&unused);
     check_context_open_as(repo_root, kind, &unused, &context);

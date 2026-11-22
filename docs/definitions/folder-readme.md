@@ -43,4 +43,5 @@ The `README.md` that every folder of a descent tree carries.
 9. The literal text `to write` stands where a person has still to write, as in a skeleton `tarn-check adopt` writes
    (see `version.md`). A line of the opening paragraph that reads exactly `to write`, and a child line whose one line
    is exactly `to write`, are warned as `prose-to-write`, never refused. A line inside a generated block is warned by
-   the rules of `generated.md` instead, so no line is warned twice.
+   the rules of `generated.md` instead, so no line is warned twice. Version 1's `--quick` skips nothing, so these
+   warnings and the block warnings of `generated.md` are given under it as without it.
