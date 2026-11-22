@@ -1,5 +1,6 @@
 @echo off
 setlocal
+if defined TARN_STUB_GIT_LOG echo %*>>"%TARN_STUB_GIT_LOG%"
 set "root=%~2"
 set "author="
 set "stamp="

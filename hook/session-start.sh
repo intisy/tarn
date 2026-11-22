@@ -3,8 +3,13 @@
 
 line_limit=20
 
+is_docs_folder_of_a_repo() {
+    [ "${1##*/}" = docs ] && [ ! -e "$1/.git" ] && [ -f "${1%/*}/docs/VERSION" ]
+}
+
 is_tree_root() {
     [ -f "$1/docs/VERSION" ] && return 0
+    is_docs_folder_of_a_repo "$1" && return 1
     [ -f "$1/VERSION" ] && grep -q '^tarn [0-9]' "$1/VERSION"
 }
 
