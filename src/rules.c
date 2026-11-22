@@ -110,7 +110,7 @@ void rules_report_refused(const check_context *context, const char *path, const 
 
 int rules_is_code_file(const char *name) {
     size_t index;
-    if (strcmp(name, "CMakeLists.txt") == 0) {
+    if (strcmp(name, RULES_CODE_FILE_NAME) == 0) {
         return 1;
     }
     for (index = 0; index < sizeof code_extensions / sizeof code_extensions[0]; index++) {
@@ -119,6 +119,11 @@ int rules_is_code_file(const char *name) {
         }
     }
     return 0;
+}
+
+const char *const *rules_code_extensions(size_t *count) {
+    *count = sizeof code_extensions / sizeof code_extensions[0];
+    return code_extensions;
 }
 
 void rules_check_size(const check_context *context, const char *path, const text_document *document) {

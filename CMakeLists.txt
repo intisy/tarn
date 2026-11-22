@@ -18,6 +18,7 @@ add_library(tarn_check_objects OBJECT
     src/boundary.c
     src/check.c
     src/directory.c
+    src/drift.c
     src/generate.c
     src/ignore.c
     src/links.c

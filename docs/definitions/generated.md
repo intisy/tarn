@@ -26,13 +26,18 @@ Blocks inside a doc that the checker writes, never a person.
    repos snapshot marks `not` has ` (does not follow tarn yet)` appended by the generator. That marker is not part of
    the kept `<text>`, so it goes when the repo starts to follow, and a placeholder followed by it still warns.
 4. The checker skips fenced code blocks and inline code when it reads markers and lines.
-5. The checker regenerates each block and fails on a difference between the file and the regenerated text, as
-   `generated-block-stale` at the block's first line. `tarn-check --write` rewrites the stale blocks in place instead,
-   keeping the file's line endings and byte order mark and touching nothing outside a block, and then checks as usual.
-   `source-children` is regenerated from the source folder. An `org-repos` block is regenerated from the repos
-   snapshot when one is given and left as it is when none is; either way each of its lines must have the `org-repos`
-   form of rule 3, or it is refused as `generated-line-form`. Its lines are not child lines of the README, and the
-   `link-into-nonstandard` rule of `category.md` does not apply to them.
+5. The checker regenerates each block and compares it with the file. A `source-children` block is regenerated from
+   the source folder, and a difference is refused as `generated-block-stale` at the block's first line. An `org-repos`
+   block is regenerated from the repos snapshot when one is given and left as it is when none is. It goes stale when
+   the org changes, which no push to the docs repo can see, so its difference is warned and never refused: a repo the
+   snapshot gives for the block (rule 2) that the block lacks is `org-misses-repo` at the block's first line, and a line
+   naming a repo the snapshot does not list at all is `org-names-gone-repo` at that line. A difference that is neither,
+   such as the order, a kept text or the marker of rule 3, is one warned `generated-block-stale` on the block. A private
+   repo inside a public block is still refused as `public-names-private` (see `category.md`). `tarn-check --write`
+   rewrites every stale block in place instead, keeping the file's line endings and byte order mark and touching
+   nothing outside a block, and then checks as usual. Each line of an `org-repos` block must have the `org-repos` form
+   of rule 3, snapshot or not, or it is refused as `generated-line-form`. Its lines are not child lines of the README,
+   and the `link-into-nonstandard` rule of `category.md` does not apply to them.
 6. Blocks do not nest, and an unmatched marker is refused: `generated-nested` for a start inside a block,
    `generated-unterminated` for a start with no end, `generated-marker-unmatched` for an end with no start, and
    `generated-block-duplicate` for a second block of the same kind in one file. A `<what>` that is not one of the two kinds is refused as

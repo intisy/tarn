@@ -1,6 +1,7 @@
 #include "generate.h"
 
 #include "directory.h"
+#include "drift.h"
 #include "memory.h"
 #include "org_repos.h"
 #include "path.h"
@@ -242,6 +243,24 @@ static int generate_lines(const generated_file *file, block_kind kind, const str
     return 1;
 }
 
+/**
+ * Refuses a stale source-children block. An org-repos block goes stale when the org changes, which no push to the docs
+ * repo can see, so it is only warned: per repo that joined or left, or once for the block when nothing else differs.
+ */
+static void report_stale(const generated_file *file, const generated_block *block, block_kind kind,
+                         const string_list *current, const string_list *expected) {
+    size_t first_line = file->document.lines[block->first].number;
+    report_severity severity = SEVERITY_REFUSED;
+    if (kind == KIND_ORG_REPOS) {
+        if (drift_warn_org_members(file->context, file->path, first_line, current, expected) > 0) {
+            return;
+        }
+        severity = SEVERITY_WARNED;
+    }
+    report_add(file->context->out, severity, file->path, first_line, "generated-block-stale",
+               "the block differs from the text tarn-check generates, and --write rewrites it");
+}
+
 /** Leaves the lines the block holds afterwards in final_lines, and sets rewrite when they replace the old ones. */
 static void resolve_body(const generated_file *file, const generated_block *block, block_kind kind,
                          const string_list *current, string_list *final_lines, int *rewrite) {
@@ -253,12 +272,10 @@ static void resolve_body(const generated_file *file, const generated_block *bloc
     }
     *rewrite = stale && file->write;
     copy_lines(*rewrite ? &expected : current, final_lines);
-    string_list_free(&expected);
     if (stale && !file->write) {
-        report_add(file->context->out, SEVERITY_REFUSED, file->path, file->document.lines[block->first].number,
-                   "generated-block-stale",
-                   "the block differs from the text tarn-check generates, and --write rewrites it");
+        report_stale(file, block, kind, current, &expected);
     }
+    string_list_free(&expected);
 }
 
 static size_t final_line_number(const generated_file *file, const generated_block *block, long shift, size_t index) {

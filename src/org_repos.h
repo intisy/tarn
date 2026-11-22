@@ -9,5 +9,7 @@ void org_repos_lines(const check_context *context, const string_list *current_li
 /** Tells whether the line reads `- [<owner>/<name>](https://github.com/<owner>/<name>) - <text>`. */
 int org_repos_is_line(const char *line);
 int org_repos_is_unwritten(const char *line);
+/** The `<owner>/<name>` a well-formed line lists, as a new string; NULL for a line in another form. */
+char *org_repos_line_name(const char *line);
 
 #endif

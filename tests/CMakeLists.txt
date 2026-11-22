@@ -90,3 +90,26 @@ set_tests_properties(cli/write PROPERTIES FIXTURES_REQUIRED write-trees RESOURCE
 
 add_test(NAME self
     COMMAND tarn-check --snapshot ${TARN_SNAPSHOTS}/self.snapshot --repository intisy/tarn ${PROJECT_SOURCE_DIR})
+
+add_test(NAME cli/warn-only-prints-warnings-and-exits-zero
+    COMMAND ${CMAKE_COMMAND}
+        -DPROGRAM=$<TARGET_FILE:tarn-check>
+        -DARGUMENTS=--warn-only|${TARN_TREES}/missing-readme
+        -DEXPECTED=0
+        "-DHAS=^warned \\.:0 snapshot-absent "
+        -DLACKS=refused
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/expect_exit.cmake)
+set_tests_properties(cli/warn-only-prints-warnings-and-exits-zero PROPERTIES FIXTURES_REQUIRED trees)
+
+if(CMAKE_HOST_WIN32)
+    set(TARN_STUB_GIT git.cmd)
+else()
+    set(TARN_STUB_GIT git)
+endif()
+set(TARN_STUB_GIT_FOLDER ${CMAKE_CURRENT_BINARY_DIR}/stub-git)
+file(REMOVE_RECURSE ${TARN_STUB_GIT_FOLDER})
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/stub-git/${TARN_STUB_GIT} DESTINATION ${TARN_STUB_GIT_FOLDER}
+    FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/stub-git/${TARN_STUB_GIT})
+file(TO_NATIVE_PATH ${TARN_STUB_GIT_FOLDER} TARN_STUB_GIT_PATH)
+set_tests_properties(check/source-doc-stale PROPERTIES ENVIRONMENT "PATH=${TARN_STUB_GIT_PATH}")

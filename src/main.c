@@ -8,11 +8,13 @@
 #define EXIT_BAD_USAGE 2
 
 static const char usage[] =
-    "usage: tarn-check [--quick] [--write] [--snapshot <file> --repository <owner>/<name>] [<repo root>]\n";
+    "usage: tarn-check [--quick] [--write] [--warn-only] [--snapshot <file> --repository <owner>/<name>] "
+    "[<repo root>]\n";
 
 typedef struct {
     const char *repo_root;
     const char *snapshot_path;
+    int warn_only;
     check_options options;
 } command_line;
 
@@ -33,6 +35,8 @@ static int parse_command_line(int argument_count, char **arguments, command_line
             parsed->options.quick = 1;
         } else if (strcmp(argument, "--write") == 0) {
             parsed->options.write = 1;
+        } else if (strcmp(argument, "--warn-only") == 0) {
+            parsed->warn_only = 1;
         } else if (strcmp(argument, "--snapshot") == 0 && has_value(index, argument_count)) {
             parsed->snapshot_path = arguments[++index];
         } else if (strcmp(argument, "--repository") == 0 && has_value(index, argument_count)) {
@@ -79,8 +83,13 @@ static int run(const command_line *parsed) {
         report_free(&out);
         return EXIT_BAD_USAGE;
     }
-    report_write(&out, stdout);
-    exit_code = report_exit_code(&out);
+    if (parsed->warn_only) {
+        report_write_warnings(&out, stdout);
+        exit_code = 0;
+    } else {
+        report_write(&out, stdout);
+        exit_code = report_exit_code(&out);
+    }
     report_free(&out);
     return exit_code;
 }
