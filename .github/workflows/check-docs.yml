@@ -1,0 +1,141 @@
+name: Check docs
+
+# Checks the calling repository's docs against the tarn standard. The checker never calls the network: this
+# workflow builds it from a pinned tarn commit and hands it a snapshot of the owner's repos, their visibility and
+# whether each follows the standard. check mode fails the job on a refusal; warn mode keeps one issue titled
+# "Docs drift" holding the warnings, opened when there are some and closed when there are none.
+on:
+  workflow_call:
+    inputs:
+      standard-ref:
+        description: 'The intisy/tarn commit whose checker judges the docs'
+        required: true
+        type: string
+      mode:
+        description: 'check (fail on a refusal) or warn (keep the Docs drift issue)'
+        required: false
+        type: string
+        default: 'check'
+      default-branch:
+        description: 'The branch warn mode reads; empty takes the repository default branch'
+        required: false
+        type: string
+        default: ''
+    secrets:
+      envPAT:
+        description: 'Token able to list the owner''s private repos; falls back to the job token, which sees public ones only'
+        required: false
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Refuse a mode that does not exist
+        shell: bash
+        env:
+          MODE: ${{ inputs.mode }}
+        run: |
+          case "$MODE" in
+            check|warn) ;;
+            *) echo "::error::mode '$MODE' is neither check nor warn."; exit 1 ;;
+          esac
+
+      - name: Pick the branch to read
+        id: branch
+        shell: bash
+        env:
+          MODE: ${{ inputs.mode }}
+          DEFAULT_BRANCH: ${{ inputs.default-branch || github.event.repository.default_branch }}
+        run: |
+          if [ "$MODE" = warn ]; then
+            echo "ref=$DEFAULT_BRANCH" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Full history, because a shallow clone makes every source doc look as new as its code.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.branch.outputs.ref }}
+          fetch-depth: ${{ inputs.mode == 'warn' && '0' || '1' }}
+          path: repository
+
+      - name: Checkout the standard
+        uses: actions/checkout@v4
+        with:
+          repository: intisy/tarn
+          ref: ${{ inputs.standard-ref }}
+          path: standard
+
+      - name: Build the checker
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S standard -B "$RUNNER_TEMP/tarn-build" -DCMAKE_BUILD_TYPE=Release
+          cmake --build "$RUNNER_TEMP/tarn-build" --target tarn-check --parallel
+          echo "TARN_CHECK=$RUNNER_TEMP/tarn-build/tarn-check" >> "$GITHUB_ENV"
+
+      - name: Write the repos snapshot
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.envPAT || github.token }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+          snapshot="$RUNNER_TEMP/repos.snapshot"
+          if [ "$(gh api "users/$OWNER" --jq .type)" = Organization ]; then
+            listing="orgs/$OWNER/repos?type=all&per_page=100"
+          else
+            listing="users/$OWNER/repos?type=owner&per_page=100"
+          fi
+          : > "$snapshot"
+          gh api --paginate "$listing" --jq '.[] | .full_name + " " + (if .private then "private" else "public" end)' |
+          while read -r name visibility; do
+            follows=not
+            if gh api "repos/$name/contents/docs/VERSION" --silent 2>/dev/null ||
+               gh api "repos/$name/contents/VERSION" --silent 2>/dev/null; then
+              follows=follows
+            fi
+            echo "$name $visibility $follows" >> "$snapshot"
+          done
+          echo "TARN_SNAPSHOT=$snapshot" >> "$GITHUB_ENV"
+          cat "$snapshot"
+
+      - name: Check
+        if: ${{ inputs.mode == 'check' }}
+        shell: bash
+        run: '"$TARN_CHECK" --snapshot "$TARN_SNAPSHOT" --repository "$GITHUB_REPOSITORY" repository'
+
+      - name: Collect the warnings
+        if: ${{ inputs.mode == 'warn' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$TARN_CHECK" --warn-only --snapshot "$TARN_SNAPSHOT" --repository "$GITHUB_REPOSITORY" repository \
+            > "$RUNNER_TEMP/warnings.txt"
+          cat "$RUNNER_TEMP/warnings.txt"
+
+      - name: Keep the Docs drift issue
+        if: ${{ inputs.mode == 'warn' }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          title="Docs drift"
+          warnings="$RUNNER_TEMP/warnings.txt"
+          issue=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "in:title \"$title\"" \
+            --json number,title --jq ".[] | select(.title == \"$title\") | .number" | head -n 1)
+          if [ -s "$warnings" ]; then
+            body="$RUNNER_TEMP/body.md"
+            { echo "tarn-check found what a single push cannot see:"; echo; echo '```'; cat "$warnings"; echo '```'; } > "$body"
+            if [ -n "$issue" ]; then
+              gh issue edit "$issue" --repo "$GITHUB_REPOSITORY" --body-file "$body"
+            else
+              gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body-file "$body"
+            fi
+          elif [ -n "$issue" ]; then
+            gh issue close "$issue" --repo "$GITHUB_REPOSITORY" --comment "No drift left."
+          fi

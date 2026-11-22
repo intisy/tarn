@@ -1,0 +1,28 @@
+name: Docs
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 5 * * 1'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
+    uses: ./.github/workflows/check-docs.yml
+    with:
+      standard-ref: ${{ github.sha }}
+      mode: check
+
+  warn:
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+    uses: ./.github/workflows/check-docs.yml
+    with:
+      standard-ref: ${{ github.sha }}
+      mode: warn
+      default-branch: ${{ github.ref_name }}
