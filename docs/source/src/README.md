@@ -3,7 +3,7 @@ The checker, `tarn-check`. `check_tree` reads the version file to tell a repo do
 - [check.c](../../../src/check.c) - `check_tree`: the version files, the tree kind, and the order of the checks
 - [check.h](../../../src/check.h) - `check_tree` and its options, the entry point every caller uses
 - [context.h](../../../src/context.h) - what every rule module knows about the tree being checked
-- [directory.c](../../../src/directory.c) - the one place that talks to the OS: folder listings and file reads, on Windows and POSIX
+- [directory.c](../../../src/directory.c) - the one place that talks to the OS: folder listings that never follow a folder link, and file reads, on Windows and POSIX
 - [directory.h](../../../src/directory.h) - a folder listing, sorted by byte order, with names exactly as stored
 - [ignore.c](../../../src/ignore.c) - the source mirror's ignore list: the root `.gitignore` and the fixed folders
 - [ignore.h](../../../src/ignore.h) - the ignore patterns and the two questions asked of them

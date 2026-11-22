@@ -18,10 +18,19 @@ foreach(case IN LISTS TARN_CASES)
     set_tests_properties(check/${case} PROPERTIES FIXTURES_REQUIRED trees)
 endforeach()
 
-add_test(NAME cli/refuses-a-broken-tree COMMAND tarn-check ${TARN_TREES}/missing-readme)
-set_tests_properties(cli/refuses-a-broken-tree PROPERTIES FIXTURES_REQUIRED trees WILL_FAIL TRUE)
+function(tarn_expect_exit name expected argument)
+    add_test(NAME cli/${name}
+        COMMAND ${CMAKE_COMMAND}
+            -DPROGRAM=$<TARGET_FILE:tarn-check>
+            -DARGUMENT=${argument}
+            -DEXPECTED=${expected}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/expect_exit.cmake)
+    set_tests_properties(cli/${name} PROPERTIES FIXTURES_REQUIRED trees)
+endfunction()
 
-add_test(NAME cli/refuses-an-unknown-option COMMAND tarn-check --no-such-option)
-set_tests_properties(cli/refuses-an-unknown-option PROPERTIES WILL_FAIL TRUE)
+tarn_expect_exit(passes-a-clean-tree 0 ${TARN_TREES}/anchor-link)
+tarn_expect_exit(refuses-a-broken-tree 1 ${TARN_TREES}/missing-readme)
+tarn_expect_exit(refuses-an-unknown-option 2 --no-such-option)
+tarn_expect_exit(refuses-a-missing-root 2 ${TARN_TREES}/no-such-tree)
 
 add_test(NAME self COMMAND tarn-check ${PROJECT_SOURCE_DIR})

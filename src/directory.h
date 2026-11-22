@@ -8,7 +8,11 @@ typedef struct {
     int is_directory;
 } directory_entry;
 
-/** A folder's entries without `.` and `..`, sorted by byte order of name, names exactly as stored on disk. */
+/**
+ * A folder's entries without `.` and `..`, sorted by byte order of name, names exactly as stored on disk.
+ * @implNote A link to a folder (a symlink, or a junction on Windows) is listed as a non-folder, so no walk follows
+ * it into a cycle.
+ */
 typedef struct {
     directory_entry *entries;
     size_t count;
