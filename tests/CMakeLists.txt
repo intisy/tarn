@@ -130,6 +130,21 @@ add_test(NAME cli/staleness-trims-a-trailing-separator
 set_tests_properties(cli/staleness-trims-a-trailing-separator PROPERTIES
     FIXTURES_REQUIRED trees ENVIRONMENT "PATH=${TARN_STUB_GIT_PATH}")
 
+function(tarn_expect_quick_skips_git name tree)
+    add_test(NAME cli/${name}
+        COMMAND ${CMAKE_COMMAND}
+            -DPROGRAM=$<TARGET_FILE:tarn-check>
+            -DARGUMENTS=--quick|${TARN_TREES}/${tree}
+            -DEXPECTED=0
+            "-DLACKS=source-doc-stale|staleness-skipped"
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/expect_exit.cmake)
+    set_tests_properties(cli/${name} PROPERTIES
+        FIXTURES_REQUIRED trees ENVIRONMENT "PATH=${TARN_STUB_GIT_PATH}")
+endfunction()
+
+tarn_expect_quick_skips_git(quick-skips-the-staleness-check source-doc-stale)
+tarn_expect_quick_skips_git(quick-skips-the-shallow-check source-doc-shallow)
+
 add_executable(adopt_test adopt_test.c test_snapshot.c)
 target_link_libraries(adopt_test PRIVATE tarn_check_objects)
 tarn_strict_warnings(adopt_test)
