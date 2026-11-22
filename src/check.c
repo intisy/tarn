@@ -10,7 +10,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define NEWEST_VERSION 1
 #define MOST_VERSION_DIGITS 9
 
 typedef enum { VERSION_ABSENT, VERSION_MALFORMED, VERSION_READ } version_state;
@@ -120,23 +119,49 @@ static int decide_tree_kind(check_context *context) {
     return 0;
 }
 
+static void init_context(const char *repo_root, int newest_version, report *out, check_context *context) {
+    memset(context, 0, sizeof *context);
+    context->repo_root = repo_root;
+    context->newest_version = newest_version == 0 ? CHECK_NEWEST_VERSION : newest_version;
+    context->out = out;
+    string_list_init(&context->code_folders);
+}
+
+static void load_tree(check_context *context) {
+    ignore_load(context->repo_root, &context->ignore);
+    if (context->kind == TREE_REPO) {
+        walk_find_code_folders(context);
+    }
+}
+
 int check_context_open(const char *repo_root, int newest_version, report *out, check_context *context) {
     if (!directory_is_directory(repo_root)) {
         return -1;
     }
-    memset(context, 0, sizeof *context);
-    context->repo_root = repo_root;
-    context->newest_version = newest_version == 0 ? NEWEST_VERSION : newest_version;
-    context->out = out;
-    string_list_init(&context->code_folders);
+    init_context(repo_root, newest_version, out, context);
     if (!decide_tree_kind(context)) {
         return 0;
     }
-    ignore_load(repo_root, &context->ignore);
-    if (context->kind == TREE_REPO) {
-        walk_find_code_folders(context);
-    }
+    load_tree(context);
     return 1;
+}
+
+int check_context_open_as(const char *repo_root, tree_kind kind, report *out, check_context *context) {
+    if (!directory_is_directory(repo_root)) {
+        return -1;
+    }
+    init_context(repo_root, 0, out, context);
+    context->kind = kind;
+    context->descent_root = kind == TREE_REPO ? "docs" : "";
+    load_tree(context);
+    return 1;
+}
+
+int check_version_decides(const char *repo_root, tree_kind kind) {
+    if (kind == TREE_REPO) {
+        return read_version(repo_root, "docs/VERSION").state != VERSION_ABSENT;
+    }
+    return read_version(repo_root, "VERSION").state == VERSION_READ;
 }
 
 void check_context_close(check_context *context) {

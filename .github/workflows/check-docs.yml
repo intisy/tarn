@@ -1,9 +1,7 @@
 name: Check docs
 
-# Checks the calling repository's docs against the tarn standard. The checker never calls the network: this
-# workflow builds it from a pinned tarn commit and hands it a snapshot of the owner's repos, their visibility and
-# whether each follows the standard. check mode fails the job on a refusal; warn mode keeps one issue titled
-# "Docs drift" holding the warnings, opened when there are some and closed when there are none.
+# The checker never calls the network, so this workflow hands it the owner's repos as a snapshot file.
+# A caller grants contents: read, and issues: write for warn mode.
 on:
   workflow_call:
     inputs:
@@ -77,6 +75,15 @@ jobs:
           cmake --build "$RUNNER_TEMP/tarn-build" --target tarn-check --parallel
           echo "TARN_CHECK=$RUNNER_TEMP/tarn-build/tarn-check" >> "$GITHUB_ENV"
 
+      - name: Warn that private repos are unseen
+        shell: bash
+        env:
+          HAS_TOKEN: ${{ secrets.envPAT != '' }}
+        run: |
+          if [ "$HAS_TOKEN" != true ]; then
+            echo "::warning::No envPAT was given, so the snapshot holds public repos only and no private repo can be checked for."
+          fi
+
       - name: Write the repos snapshot
         shell: bash
         env:
@@ -85,21 +92,41 @@ jobs:
         run: |
           set -euo pipefail
           snapshot="$RUNNER_TEMP/repos.snapshot"
+          # A 404 means the file is absent; any other failure must stop the run rather than read as "not".
+          version_of() {
+            local answer status
+            if answer=$(gh api -H 'Accept: application/vnd.github.raw' "repos/$1/contents/$2" 2>"$RUNNER_TEMP/api.err"); then
+              printf '%s\n' "$answer" | head -n 1 | tr -d '\r'
+              return 0
+            fi
+            status=$(grep -o 'HTTP [0-9]*' "$RUNNER_TEMP/api.err" | head -n 1 || true)
+            [ "$status" = "HTTP 404" ] && return 0
+            cat "$RUNNER_TEMP/api.err" >&2
+            return 1
+          }
+          follows_tarn() {
+            local path line
+            for path in docs/VERSION VERSION; do
+              line=$(version_of "$1" "$path") || return 1
+              if printf '%s' "$line" | grep -Eq '^tarn [0-9]+$'; then
+                echo follows
+                return 0
+              fi
+            done
+            echo not
+          }
           if [ "$(gh api "users/$OWNER" --jq .type)" = Organization ]; then
             listing="orgs/$OWNER/repos?type=all&per_page=100"
           else
             listing="users/$OWNER/repos?type=owner&per_page=100"
           fi
+          gh api --paginate "$listing" --jq '.[] | .full_name + " " + (if .visibility == "public" then "public" else "private" end)' \
+            > "$RUNNER_TEMP/repos.txt"
           : > "$snapshot"
-          gh api --paginate "$listing" --jq '.[] | .full_name + " " + (if .private then "private" else "public" end)' |
           while read -r name visibility; do
-            follows=not
-            if gh api "repos/$name/contents/docs/VERSION" --silent 2>/dev/null ||
-               gh api "repos/$name/contents/VERSION" --silent 2>/dev/null; then
-              follows=follows
-            fi
+            follows=$(follows_tarn "$name")
             echo "$name $visibility $follows" >> "$snapshot"
-          done
+          done < "$RUNNER_TEMP/repos.txt"
           echo "TARN_SNAPSHOT=$snapshot" >> "$GITHUB_ENV"
           cat "$snapshot"
 

@@ -36,5 +36,7 @@ int report_exit_code(const report *out);
 char *report_format(const report *out);
 void report_write(const report *out, FILE *stream);
 void report_write_warnings(const report *out, FILE *stream);
+/** Warns `prose-to-write` at the line, whose text is still the placeholder TEXT_PLACEHOLDER. */
+void report_prose_to_write(report *out, const char *path, size_t line);
 
 #endif

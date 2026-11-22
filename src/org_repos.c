@@ -10,7 +10,6 @@
 
 static const char github_url[] = "https://github.com/";
 static const char not_following[] = " (does not follow tarn yet)";
-static const char placeholder_text[] = "to write";
 
 typedef struct {
     const char *name;
@@ -73,7 +72,7 @@ int org_repos_is_unwritten(const char *line) {
         return 0;
     }
     text = written_text(parsed.text);
-    unwritten = strcmp(text, placeholder_text) == 0;
+    unwritten = strcmp(text, TEXT_PLACEHOLDER) == 0;
     free(text);
     return unwritten;
 }
@@ -94,11 +93,10 @@ static char *kept_text(const string_list *current_lines, const char *full_name) 
             return written_text(parsed.text);
         }
     }
-    return memory_copy_string(placeholder_text);
+    return memory_copy_string(TEXT_PLACEHOLDER);
 }
 
-/** A public docs repo lists only the public repos, so its block never names a private one. */
-static int is_listed(const check_context *context, const snapshot_repo *repo) {
+int org_repos_is_listed(const check_context *context, const snapshot_repo *repo) {
     const snapshot_repo *self = context->self;
     return repo != self && snapshot_same_owner(repo, self) &&
            (self->visibility == VISIBILITY_PRIVATE || repo->visibility == VISIBILITY_PUBLIC);
@@ -129,7 +127,7 @@ void org_repos_lines(const check_context *context, const string_list *current_li
     size_t count = 0;
     size_t index;
     for (index = 0; index < snapshot->count; index++) {
-        if (is_listed(context, &snapshot->repos[index])) {
+        if (org_repos_is_listed(context, &snapshot->repos[index])) {
             listed[count++] = &snapshot->repos[index];
         }
     }

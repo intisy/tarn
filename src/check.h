@@ -15,6 +15,8 @@ typedef struct {
     int newest_version;
 } check_options;
 
+#define CHECK_NEWEST_VERSION 1
+
 enum { CHECK_DONE = 0, CHECK_NOT_A_FOLDER = -1, CHECK_REPOSITORY_UNKNOWN = -2 };
 
 /**
@@ -31,6 +33,16 @@ int check_tree(const char *repo_root, const check_options *options, report *out)
  * result.
  */
 int check_context_open(const char *repo_root, int newest_version, report *out, check_context *context);
+/**
+ * Opens a context for a tree of the given kind whatever version file it has or lacks, which is what adoption needs
+ * before it writes one. Returns -1 when repo_root is not a folder and 1 otherwise; close it after 1.
+ */
+int check_context_open_as(const char *repo_root, tree_kind kind, report *out, check_context *context);
 void check_context_close(check_context *context);
+/**
+ * Whether the repo carries a version file of the given kind that another kind's could not sit beside: a docs/VERSION
+ * in any state, and a root VERSION reading `tarn <n>` (a root VERSION of another form is a project's own, not tarn's).
+ */
+int check_version_decides(const char *repo_root, tree_kind kind);
 
 #endif

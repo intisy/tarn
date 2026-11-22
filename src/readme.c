@@ -13,9 +13,16 @@ static const char form_after_paragraph[] = "only child lines follow the opening 
 
 typedef enum { BEFORE_PARAGRAPH, IN_PARAGRAPH, AFTER_PARAGRAPH } form_state;
 
+/** Where the reading stands: the form so far, and whether the line sits inside a generated block. */
+typedef struct {
+    form_state form;
+    int in_generated_block;
+} reading_state;
+
 typedef struct {
     char *name;
     char *target;
+    const char *text;
 } child_line;
 
 typedef struct {
@@ -82,6 +89,7 @@ static int parse_child_line(const char *line, child_line *out) {
     }
     out->name = memory_copy_bytes(name_start, (size_t)(name_end - name_start));
     out->target = memory_copy_bytes(target_start, (size_t)(target_end - target_start));
+    out->text = description + 3;
     return 1;
 }
 
@@ -161,12 +169,16 @@ static void check_child_line(const check_context *context, const readme_place *p
     }
 }
 
+/** A placeholder inside a generated block is the generator's to warn, so only a hand-written one is warned here. */
 static void read_child_line(const check_context *context, const readme_place *place, const text_line *line,
-                            readme_children *children) {
+                            int in_generated_block, readme_children *children) {
     child_line child;
     if (!parse_child_line(line->text, &child)) {
         refuse(context, place, line->number, "readme-form", form_child_line);
         return;
+    }
+    if (!in_generated_block && strcmp(child.text, TEXT_PLACEHOLDER) == 0) {
+        report_prose_to_write(context->out, place->readme_path, line->number);
     }
     check_child_line(context, place, line->number, children, &child);
     free(child.name);
@@ -177,26 +189,45 @@ static int is_child_line_candidate(const char *line) {
     return strncmp(line, "- ", 2) == 0;
 }
 
-static form_state read_line(const check_context *context, const readme_place *place, const text_line *line,
-                            form_state state, readme_children *children, unsigned char *is_child_line) {
+static void track_generated_block(const char *line, reading_state *state) {
+    char *what = text_generated_what(line);
+    if (what != NULL) {
+        state->in_generated_block = 1;
+        free(what);
+    } else if (text_is_generated_end(line)) {
+        state->in_generated_block = 0;
+    }
+}
+
+static form_state read_form(const check_context *context, const readme_place *place, const text_line *line,
+                            const reading_state *state, readme_children *children, unsigned char *is_child_line) {
     if (text_is_blank(line->text)) {
-        return state == IN_PARAGRAPH ? AFTER_PARAGRAPH : state;
+        return state->form == IN_PARAGRAPH ? AFTER_PARAGRAPH : state->form;
     }
     if (text_is_generated_marker(line->text) || is_child_line_candidate(line->text)) {
-        if (state == BEFORE_PARAGRAPH) {
+        if (state->form == BEFORE_PARAGRAPH) {
             refuse(context, place, line->number, "readme-form", form_opening);
         }
         if (is_child_line_candidate(line->text)) {
             *is_child_line = 1;
-            read_child_line(context, place, line, children);
+            read_child_line(context, place, line, state->in_generated_block, children);
         }
         return AFTER_PARAGRAPH;
     }
-    if (state == AFTER_PARAGRAPH) {
+    if (state->form == AFTER_PARAGRAPH) {
         refuse(context, place, line->number, "readme-form", form_after_paragraph);
         return AFTER_PARAGRAPH;
     }
+    if (strcmp(line->text, TEXT_PLACEHOLDER) == 0) {
+        report_prose_to_write(context->out, place->readme_path, line->number);
+    }
     return IN_PARAGRAPH;
+}
+
+static void read_line(const check_context *context, const readme_place *place, const text_line *line,
+                      reading_state *state, readme_children *children, unsigned char *is_child_line) {
+    track_generated_block(line->text, state);
+    state->form = read_form(context, place, line, state, children, is_child_line);
 }
 
 static void report_unlisted(const check_context *context, const readme_place *place,
@@ -214,7 +245,7 @@ static void report_unlisted(const check_context *context, const readme_place *pl
 void readme_check(const check_context *context, const readme_place *place, const text_document *document,
                   readme_children *children, unsigned char *child_lines) {
     unsigned char *fenced = text_fenced_lines(document);
-    form_state state = BEFORE_PARAGRAPH;
+    reading_state state = {BEFORE_PARAGRAPH, 0};
     size_t index = 0;
     int inside_org_repos = 0;
     memset(child_lines, 0, document->count);
@@ -224,12 +255,12 @@ void readme_check(const check_context *context, const readme_place *place, const
     for (; index < document->count; index++) {
         if (!fenced[index] && text_is_org_repos_line(document->lines[index].text, &inside_org_repos)) {
             child_lines[index] = 1;
-            state = AFTER_PARAGRAPH;
+            state.form = AFTER_PARAGRAPH;
         } else if (!fenced[index]) {
-            state = read_line(context, place, &document->lines[index], state, children, &child_lines[index]);
+            read_line(context, place, &document->lines[index], &state, children, &child_lines[index]);
         }
     }
-    if (state == BEFORE_PARAGRAPH) {
+    if (state.form == BEFORE_PARAGRAPH) {
         refuse(context, place, 0, "readme-form", form_opening);
     }
     report_unlisted(context, place, children);

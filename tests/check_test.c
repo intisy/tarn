@@ -74,6 +74,10 @@ static const fixture_case fixture_cases[] = {
      "refused docs/README.md:5 readme-form a child line's text and target both name the child\n"
      "refused docs/README.md:7 readme-form only child lines follow the opening paragraph\n"
      "refused docs/README.md:0 readme-misses-child does not list notes.md\n" SNAPSHOT_ABSENT},
+    {"readme-to-write", 0,
+     "warned docs/README.md:1 prose-to-write the text to write is a placeholder for a person to replace\n"
+     "warned docs/README.md:3 prose-to-write the text to write is a placeholder for a person to replace\n"
+     SNAPSHOT_ABSENT},
     {"kind-not-allowed", 1,
      "refused docs/TASKS.md:0 kind-not-allowed TASKS.md is a record, and a repo docs tree holds no records\n"
      "refused docs/data.json:0 kind-not-allowed a descent tree holds only README.md, prose .md files and folders\n"

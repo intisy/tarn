@@ -40,3 +40,7 @@ The `README.md` that every folder of a descent tree carries.
 8. The one exception to the child-line form is a `source/` README (see `source.md`): it also lists the code files of
    the mirrored source folder, each as `- [<name>](<path>) - <one line>`, where `<path>` is the relative path from the
    README to the file and `<name>` is the file's base name exactly.
+9. The literal text `to write` stands where a person has still to write, as in a skeleton `tarn-check adopt` writes
+   (see `version.md`). A line of the opening paragraph that reads exactly `to write`, and a child line whose one line
+   is exactly `to write`, are warned as `prose-to-write`, never refused. A line inside a generated block is warned by
+   the rules of `generated.md` instead, so no line is warned twice.

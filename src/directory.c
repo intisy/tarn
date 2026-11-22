@@ -132,6 +132,28 @@ static FILE *open_for_reading(const char *path) {
     return file;
 }
 
+int directory_make(const char *path) {
+    wchar_t *wide = widen(path);
+    int made;
+    if (wide == NULL) {
+        return -1;
+    }
+    made = CreateDirectoryW(wide, NULL) != 0;
+    free(wide);
+    return made ? 0 : -1;
+}
+
+static FILE *open_new_file(const char *path) {
+    wchar_t *wide = widen(path);
+    FILE *file;
+    if (wide == NULL) {
+        return NULL;
+    }
+    file = _wfopen(wide, L"wbx");
+    free(wide);
+    return file;
+}
+
 #else
 
 static char *join_with_slash(const char *folder, const char *name) {
@@ -177,6 +199,14 @@ int directory_is_directory(const char *path) {
 
 static FILE *open_for_reading(const char *path) {
     return fopen(path, "rb");
+}
+
+int directory_make(const char *path) {
+    return mkdir(path, 0777);
+}
+
+static FILE *open_new_file(const char *path) {
+    return fopen(path, "wbx");
 }
 
 #endif
@@ -229,4 +259,17 @@ int directory_read_file(const char *path, char **content, size_t *length) {
     *content = buffer;
     *length = used;
     return 0;
+}
+
+int directory_create_file(const char *path, const char *content, size_t length) {
+    FILE *file = open_new_file(path);
+    int written;
+    if (file == NULL) {
+        return -1;
+    }
+    written = fwrite(content, 1, length, file) == length;
+    if (fclose(file) != 0) {
+        written = 0;
+    }
+    return written ? 0 : -1;
 }

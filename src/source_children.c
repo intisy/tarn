@@ -4,12 +4,11 @@
 #include "memory.h"
 #include "path.h"
 #include "rules.h"
+#include "text.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-static const char placeholder_text[] = "to write";
 
 typedef struct {
     char *name;
@@ -46,7 +45,7 @@ static int parse_child_text(const char *line, child_text *out) {
 
 int source_children_is_unwritten(const char *line) {
     child_text parsed;
-    return parse_child_text(line, &parsed) && strcmp(parsed.text, placeholder_text) == 0;
+    return parse_child_text(line, &parsed) && strcmp(parsed.text, TEXT_PLACEHOLDER) == 0;
 }
 
 static size_t component_count(const char *relative) {
@@ -135,7 +134,7 @@ static const char *kept_text(const string_list *current_lines, const char *name)
             return parsed.text;
         }
     }
-    return placeholder_text;
+    return TEXT_PLACEHOLDER;
 }
 
 static char *format_line(const wanted_child *child, const char *text) {
