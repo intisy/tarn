@@ -3,6 +3,9 @@
 
 #include <stddef.h>
 
+/** The literal text that stands where a person has still to write, which the checker warns as prose-to-write. */
+#define TEXT_PLACEHOLDER "to write"
+
 typedef struct {
     char *text;
     size_t number;

@@ -15,6 +15,7 @@ function(tarn_strict_warnings target)
 endfunction()
 
 add_library(tarn_check_objects OBJECT
+    src/adopt.c
     src/boundary.c
     src/check.c
     src/directory.c

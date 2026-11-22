@@ -301,8 +301,7 @@ static void warn_unwritten(const generated_file *file, const generated_block *bl
         const char *line = lines->items[index];
         int unwritten = kind == KIND_ORG_REPOS ? org_repos_is_unwritten(line) : source_children_is_unwritten(line);
         if (unwritten) {
-            report_add(file->context->out, SEVERITY_WARNED, file->path, final_line_number(file, block, shift, index),
-                       "prose-to-write", "the text to write is a placeholder for a person to replace");
+            report_prose_to_write(file->context->out, file->path, final_line_number(file, block, shift, index));
         }
     }
 }

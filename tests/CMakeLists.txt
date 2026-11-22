@@ -129,3 +129,59 @@ add_test(NAME cli/staleness-trims-a-trailing-separator
         -P ${CMAKE_CURRENT_SOURCE_DIR}/expect_exit.cmake)
 set_tests_properties(cli/staleness-trims-a-trailing-separator PROPERTIES
     FIXTURES_REQUIRED trees ENVIRONMENT "PATH=${TARN_STUB_GIT_PATH}")
+
+add_executable(adopt_test adopt_test.c test_snapshot.c)
+target_link_libraries(adopt_test PRIVATE tarn_check_objects)
+tarn_strict_warnings(adopt_test)
+
+set(TARN_ADOPT_TREES ${CMAKE_CURRENT_BINARY_DIR}/adopt-trees)
+add_test(NAME prepare-adopt-trees
+    COMMAND ${CMAKE_COMMAND}
+        -DSOURCE=${CMAKE_CURRENT_SOURCE_DIR}/adopt-trees
+        -DDESTINATION=${TARN_ADOPT_TREES}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/prepare_trees.cmake)
+set_tests_properties(prepare-adopt-trees PROPERTIES FIXTURES_SETUP adopt-trees RESOURCE_LOCK adopt-trees)
+
+file(GLOB TARN_ADOPT_CASES LIST_DIRECTORIES true CONFIGURE_DEPENDS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/adopt-trees
+    ${CMAKE_CURRENT_SOURCE_DIR}/adopt-trees/*)
+foreach(case IN LISTS TARN_ADOPT_CASES)
+    add_test(NAME adopt/${case} COMMAND adopt_test ${TARN_ADOPT_TREES} ${case} ${TARN_SNAPSHOTS})
+    set_tests_properties(adopt/${case} PROPERTIES FIXTURES_REQUIRED adopt-trees RESOURCE_LOCK adopt-trees)
+endforeach()
+
+set(TARN_STANDARD_REF 0123456789abcdef0123456789abcdef01234567)
+tarn_expect_exit(adopt-refuses-a-missing-standard-ref 2 adopt repo ${TARN_TREES}/anchor-link)
+tarn_expect_exit(adopt-refuses-a-short-standard-ref 2 adopt repo --standard-ref 0123abc ${TARN_TREES}/anchor-link)
+tarn_expect_exit(adopt-refuses-an-unknown-kind 2 adopt site --standard-ref ${TARN_STANDARD_REF} ${TARN_TREES}/anchor-link)
+tarn_expect_exit(adopt-refuses-a-check-option 2
+    adopt repo --standard-ref ${TARN_STANDARD_REF} --warn-only ${TARN_TREES}/anchor-link)
+tarn_expect_exit(adopt-refuses-a-missing-root 2 adopt repo --standard-ref ${TARN_STANDARD_REF} ${TARN_TREES}/no-such-tree)
+tarn_expect_exit(adopt-org-refuses-a-missing-snapshot 2 adopt org --standard-ref ${TARN_STANDARD_REF} ${TARN_TREES}/org-tree)
+tarn_expect_exit(adopt-org-refuses-a-repository-the-snapshot-lacks 2
+    adopt org --standard-ref ${TARN_STANDARD_REF} --snapshot ${TARN_SNAPSHOTS}/intisy.snapshot --repository intisy/nobody
+    ${TARN_TREES}/org-tree)
+tarn_expect_exit(adopt-repo-refuses-a-snapshot 2
+    adopt repo --standard-ref ${TARN_STANDARD_REF} --snapshot ${TARN_SNAPSHOTS}/intisy.snapshot --repository intisy/tarn
+    ${TARN_TREES}/anchor-link)
+tarn_expect_exit(adopt-org-refuses-a-repo-docs-tree 1
+    adopt org --standard-ref ${TARN_STANDARD_REF} --snapshot ${TARN_SNAPSHOTS}/intisy.snapshot --repository intisy/docs
+    ${TARN_TREES}/anchor-link)
+tarn_expect_exit(adopt-repo-refuses-an-org-docs-tree 1 adopt repo --standard-ref ${TARN_STANDARD_REF} ${TARN_TREES}/org-tree)
+
+add_test(NAME cli/adopt-plans-without-writing
+    COMMAND ${CMAKE_COMMAND}
+        -DPROGRAM=$<TARGET_FILE:tarn-check>
+        -DARGUMENTS=adopt|repo|--standard-ref|${TARN_STANDARD_REF}|${TARN_TREES}/anchor-link
+        -DEXPECTED=0
+        "-DHAS=^keep docs/VERSION\nkeep docs/README\\.md\ncreate \\.github/workflows/docs\\.yml\n$"
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/expect_exit.cmake)
+set_tests_properties(cli/adopt-plans-without-writing PROPERTIES FIXTURES_REQUIRED trees)
+
+add_test(NAME cli/adopt-writes
+    COMMAND ${CMAKE_COMMAND}
+        -DPROGRAM=$<TARGET_FILE:tarn-check>
+        -DSOURCE=${CMAKE_CURRENT_SOURCE_DIR}/adopt-trees/adopt-repo
+        -DPREPARE=${CMAKE_CURRENT_SOURCE_DIR}/prepare_trees.cmake
+        -DWORKING=${CMAKE_CURRENT_BINARY_DIR}/cli-adopt
+        -DSTANDARD_REF=${TARN_STANDARD_REF}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/expect_adopt.cmake)

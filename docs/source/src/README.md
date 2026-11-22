@@ -1,12 +1,14 @@
-The checker, `tarn-check`. `check_tree` reads the version file to tell a repo docs tree (`docs/VERSION`, rooted at `docs/`) from an org docs tree (a root `VERSION`, rooted at the repo root), finds every source folder that holds code, regenerates the marked blocks of the descent tree (with `--write` it rewrites the stale ones first, so the walk reads the fresh files), walks the descent tree folder by folder, checks every descent file against the repos snapshot when `--snapshot` and `--repository` give one (and warns once that it did not when they do not), warns about the drift a single push cannot see (an org whose repos changed, an older declared version, a `source/` doc its code has outrun), and adds each finding to a report as `refused|warned <path>:<line> <rule> <text>`, where line 0 means the whole file or folder. Every path is relative to the repo root with forward slashes, and every name is compared byte for byte with the real directory entry, so a case mismatch is caught on a case-insensitive disk too. The program exits 0 when nothing is refused, 1 when something is, and 2 on bad usage; with `--warn-only` it prints the warned lines only and exits 0 whatever was found, which is the scheduled run's mode.
+The checker, `tarn-check`. `check_tree` reads the version file to tell a repo docs tree (`docs/VERSION`, rooted at `docs/`) from an org docs tree (a root `VERSION`, rooted at the repo root), finds every source folder that holds code, regenerates the marked blocks of the descent tree (with `--write` it rewrites the stale ones first, so the walk reads the fresh files), walks the descent tree folder by folder, checks every descent file against the repos snapshot when `--snapshot` and `--repository` give one (and warns once that it did not when they do not), warns about the drift a single push cannot see (an org whose repos changed, an older declared version, a `source/` doc its code has outrun), and adds each finding to a report as `refused|warned <path>:<line> <rule> <text>`, where line 0 means the whole file or folder. Every path is relative to the repo root with forward slashes, and every name is compared byte for byte with the real directory entry, so a case mismatch is caught on a case-insensitive disk too. The program exits 0 when nothing is refused, 1 when something is, and 2 on bad usage; with `--warn-only` it prints the warned lines only and exits 0 whatever was found, which is the scheduled run's mode. `tarn-check adopt` is the other command: it plans the files a repo or an org docs repo needs to follow the standard (the version file, README skeletons whose prose reads `to write`, the filled `source-children` or `org-repos` blocks and the thin workflow caller), prints one `create` or `keep` line per file, and with `--write` creates the absent ones, never touching a file that exists.
 
 <!-- generated: source-children -->
+- [adopt.c](../../../src/adopt.c) - `adopt`: the plan of a repo or an org, the README skeletons, the workflow caller's one template, and writing only the files that do not exist yet
+- [adopt.h](../../../src/adopt.h) - `adopt_tree`, its options and outcome, and the caller text the tests compare with
 - [boundary.c](../../../src/boundary.c) - the two snapshot rules: a public tree naming a private repo by any two adjacent segments of a path (in code too), and a GitHub link into a repo that does not follow tarn
 - [boundary.h](../../../src/boundary.h) - the snapshot check of one document
 - [check.c](../../../src/check.c) - `check_tree`: the version files judged against the newest version, the tree kind, the checked repo's line in the snapshot, the order of the checks (blocks first, then the walk, then the drift checks), and the `snapshot-absent` warning
-- [check.h](../../../src/check.h) - `check_tree`, its options (the newest version to judge against among them, which tests set and the command line does not) and its results, and the opening and closing of the context every check shares
+- [check.h](../../../src/check.h) - `check_tree`, its options (the newest version to judge against among them, which tests set and the command line does not) and its results, the opening and closing of the context every check shares (and the opening adoption uses, before any version file exists), and the question whether a version file already decides the tree's kind
 - [context.h](../../../src/context.h) - what every rule module knows about the tree being checked, the snapshot and the checked repo's line in it included
-- [directory.c](../../../src/directory.c) - the one place that talks to the OS: folder listings that never follow a folder link, and file reads, on Windows and POSIX
+- [directory.c](../../../src/directory.c) - the one place that talks to the OS: folder listings that never follow a folder link, file reads, and the folder and exclusive file creation adoption writes with, on Windows and POSIX
 - [directory.h](../../../src/directory.h) - a folder listing, sorted by byte order, with names exactly as stored
 - [drift.c](../../../src/drift.c) - the warnings a single push cannot see: an `org-repos` block missing a repo or naming one that left, an older declared version, and a `source/` doc whose folder has commits more than 14 days newer by author date, asked of git through the shell and skipped in a shallow clone
 - [drift.h](../../../src/drift.h) - the three drift checks and the staleness window
@@ -16,16 +18,16 @@ The checker, `tarn-check`. `check_tree` reads the version file to tell a repo do
 - [ignore.h](../../../src/ignore.h) - the ignore patterns and the two questions asked of them
 - [links.c](../../../src/links.c) - the dead-link rule: every link resolved from its file, anchors dropped, case compared exactly
 - [links.h](../../../src/links.h) - the link check of one document
-- [main.c](../../../src/main.c) - the command line: `tarn-check [--quick] [--write] [--warn-only] [--snapshot <file> --repository <owner>/<name>] [<repo root>]`, the snapshot's loading, `--warn-only`'s printing, and exit 2 for bad usage
+- [main.c](../../../src/main.c) - the command line: `tarn-check [--quick] [--write] [--warn-only] [--snapshot <file> --repository <owner>/<name>] [<repo root>]` and `tarn-check adopt <repo|org> --standard-ref <commit> [--write] [--snapshot <file> --repository <owner>/<name>] [<repo root>]`, the snapshot's loading, the printing of each, and exit 2 for bad usage
 - [memory.c](../../../src/memory.c) - allocation that aborts instead of returning NULL
 - [memory.h](../../../src/memory.h) - the allocation helpers
 - [org_repos.c](../../../src/org_repos.c) - the lines of an `org-repos` block, built from the snapshot, with the text of each kept by name, and the form every such line must have
-- [org_repos.h](../../../src/org_repos.h) - the block lines, the form test, the placeholder test and the repo a line names
+- [org_repos.h](../../../src/org_repos.h) - the block lines, which repos the block lists, the form test, the placeholder test and the repo a line names
 - [path.c](../../../src/path.c) - relative paths: joining, normalizing, and looking one up byte for byte
 - [path.h](../../../src/path.h) - the path helpers and the states of an exact lookup
-- [readme.c](../../../src/readme.c) - a README's form and its child lines, including the code-file lines of a `source/` README, and skipping the lines of an `org-repos` block, which are not child lines
+- [readme.c](../../../src/readme.c) - a README's form and its child lines, including the code-file lines of a `source/` README, skipping the lines of an `org-repos` block, which are not child lines, and warning a hand-written `to write`
 - [readme.h](../../../src/readme.h) - the children a README must list and where the README sits
-- [report.c](../../../src/report.c) - the report: its lines, their format, the warned lines alone, and the exit code
+- [report.c](../../../src/report.c) - the report: its lines, their format, the warned lines alone, the exit code, and the one `prose-to-write` warning every module adds
 - [report.h](../../../src/report.h) - a finding and the report that holds them
 - [rules.c](../../../src/rules.c) - the kinds a descent folder may hold, the code extensions (shared with the staleness check), and the size budget
 - [rules.h](../../../src/rules.h) - the kind of an entry and the rules read from it
@@ -36,7 +38,7 @@ The checker, `tarn-check`. `check_tree` reads the version file to tell a repo do
 - [string_list.c](../../../src/string_list.c) - a growable list of strings
 - [string_list.h](../../../src/string_list.h) - the string list
 - [text.c](../../../src/text.c) - a file as lines (BOM and CR removed), fenced code, inline code, links, the marker comments and the lines inside an `org-repos` block
-- [text.h](../../../src/text.h) - the text and Markdown helpers
+- [text.h](../../../src/text.h) - the text and Markdown helpers, and the `to write` placeholder
 - [walk.c](../../../src/walk.c) - the walk of the descent tree, the scan of the source tree, and the mirror between them
 - [walk.h](../../../src/walk.h) - the three walks `check_tree` runs, and the mirror lookup the generator reuses
 <!-- end generated -->

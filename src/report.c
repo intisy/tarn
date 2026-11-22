@@ -120,3 +120,8 @@ void report_write(const report *out, FILE *stream) {
     fputs(text, stream);
     free(text);
 }
+
+void report_prose_to_write(report *out, const char *path, size_t line) {
+    report_add(out, SEVERITY_WARNED, path, line, "prose-to-write",
+               "the text to write is a placeholder for a person to replace");
+}
