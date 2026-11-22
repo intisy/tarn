@@ -202,6 +202,38 @@ static size_t skip_inline_code(const char *line, size_t position) {
     return position + opening;
 }
 
+int text_is_org_repos_line(const char *line, int *inside) {
+    char *what = text_generated_what(line);
+    int is_marker = what != NULL || text_is_generated_end(line);
+    int was_inside = *inside;
+    if (what != NULL) {
+        *inside = strcmp(what, "org-repos") == 0;
+    } else if (is_marker) {
+        *inside = 0;
+    }
+    free(what);
+    return was_inside && !is_marker;
+}
+
+char *text_without_inline_code(const char *line) {
+    char *copy = memory_copy_string(line);
+    size_t scan = 0;
+    while (line[scan] != '\0') {
+        if (line[scan] == '\\' && line[scan + 1] != '\0') {
+            scan += 2;
+        } else if (line[scan] == '`') {
+            size_t end = skip_inline_code(line, scan);
+            if (end > scan + backtick_run(line, scan)) {
+                memset(copy + scan, ' ', end - scan);
+            }
+            scan = end;
+        } else {
+            scan++;
+        }
+    }
+    return copy;
+}
+
 static size_t find_closing(const char *line, size_t position, char opening, char closing) {
     int depth = 0;
     for (; line[position] != '\0'; position++) {

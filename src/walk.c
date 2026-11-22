@@ -1,5 +1,6 @@
 #include "walk.h"
 
+#include "boundary.h"
 #include "directory.h"
 #include "links.h"
 #include "memory.h"
@@ -140,6 +141,7 @@ static void check_readme_file(const check_context *context, const readme_place *
     readme_check(context, place, &document, children, child_lines);
     rules_check_size(context, place->readme_path, &document);
     links_check(context, place->readme_path, &document, child_lines);
+    boundary_check(context, place->readme_path, &document);
     free(child_lines);
     text_document_free(&document);
 }
@@ -170,6 +172,7 @@ static void check_prose_file(const check_context *context, const char *path) {
     }
     rules_check_size(context, path, &document);
     links_check(context, path, &document, NULL);
+    boundary_check(context, path, &document);
     text_document_free(&document);
 }
 
@@ -224,6 +227,7 @@ static void check_content_file(const check_context *context) {
         return;
     }
     links_check(context, "CONTENT.md", &document, NULL);
+    boundary_check(context, "CONTENT.md", &document);
     text_document_free(&document);
 }
 

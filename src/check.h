@@ -3,14 +3,23 @@
 
 #include "context.h"
 #include "report.h"
+#include "snapshot.h"
 
 typedef struct {
-    const char *snapshot_path;
+    /** NULL when no snapshot was given; otherwise repository names the checked repo's line in it. */
+    const repos_snapshot *snapshot;
+    const char *repository;
     int quick;
     int write;
 } check_options;
 
-/** Checks the docs tree of the repo at repo_root into out; returns 0, or -1 when repo_root is not a folder. */
+enum { CHECK_DONE = 0, CHECK_NOT_A_FOLDER = -1, CHECK_REPOSITORY_UNKNOWN = -2 };
+
+/**
+ * Checks the docs tree of the repo at repo_root into out, rewriting stale generated blocks first when options->write is
+ * set. Returns CHECK_DONE, CHECK_NOT_A_FOLDER, or CHECK_REPOSITORY_UNKNOWN when a snapshot is given and does not list
+ * options->repository.
+ */
 int check_tree(const char *repo_root, const check_options *options, report *out);
 
 /**

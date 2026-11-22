@@ -211,20 +211,6 @@ static void report_unlisted(const check_context *context, const readme_place *pl
     }
 }
 
-/** Lines inside an org-repos block are `generated.md` lines, which link outside the folder, so they are not child lines. */
-static int is_inside_org_repos(const text_line *line, int *inside) {
-    char *what = text_generated_what(line->text);
-    int is_marker = what != NULL || text_is_generated_end(line->text);
-    int was_inside = *inside;
-    if (what != NULL) {
-        *inside = strcmp(what, "org-repos") == 0;
-    } else if (is_marker) {
-        *inside = 0;
-    }
-    free(what);
-    return was_inside && !is_marker;
-}
-
 void readme_check(const check_context *context, const readme_place *place, const text_document *document,
                   readme_children *children, unsigned char *child_lines) {
     unsigned char *fenced = text_fenced_lines(document);
@@ -236,7 +222,7 @@ void readme_check(const check_context *context, const readme_place *place, const
         index = 1;
     }
     for (; index < document->count; index++) {
-        if (!fenced[index] && is_inside_org_repos(&document->lines[index], &inside_org_repos)) {
+        if (!fenced[index] && text_is_org_repos_line(document->lines[index].text, &inside_org_repos)) {
             child_lines[index] = 1;
             state = AFTER_PARAGRAPH;
         } else if (!fenced[index]) {

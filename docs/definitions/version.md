@@ -23,6 +23,7 @@ The file that declares which version of the standard a docs tree follows, and ho
 5. A `VERSION` file is not a child for `folder-readme.md`: a README need not list it.
 6. A tree declaring an older version is a pin. A pin is temporary and names the task that ends it; the reminder flags it
    until it moves.
-7. Another repo or org counts as following the standard when its tree has a version file of either kind.
+7. Another repo or org counts as following the standard when its tree has a version file of either kind. The repos
+   snapshot marks such a repo `follows` (see `category.md`).
 8. Each version ships a change list that says exactly what to change, and, where the change is mechanical, an automatic
    upgrade. Version 1 has nothing to upgrade from, so the upgrade command arrives with version 2.

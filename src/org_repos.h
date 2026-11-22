@@ -1,0 +1,13 @@
+#ifndef TARN_ORG_REPOS_H
+#define TARN_ORG_REPOS_H
+
+#include "context.h"
+#include "string_list.h"
+
+/** The lines an org-repos block holds, built from the snapshot, with the text of each kept by repo name. */
+void org_repos_lines(const check_context *context, const string_list *current_lines, string_list *out);
+/** Tells whether the line reads `- [<owner>/<name>](https://github.com/<owner>/<name>) - <text>`. */
+int org_repos_is_line(const char *line);
+int org_repos_is_unwritten(const char *line);
+
+#endif

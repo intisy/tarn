@@ -2,7 +2,7 @@ The definitions of version 1: one file per kind of file a docs tree may hold. Ea
 
 - [folder-readme.md](folder-readme.md) - the README of every folder, and the one accepted form of a child line
 - [architecture.md](architecture.md) - how the parts fit and talk, the top of a descent tree
-- [category.md](category.md) - a category folder, its prose files, and the size budget for descent files
+- [category.md](category.md) - a category folder, its prose files, the size budget for descent files, and the repos snapshot the cross-repo rules read
 - [source.md](source.md) - the source mirror: one doc per source folder that holds code
 - [content.md](content.md) - the root CONTENT.md the top-level README is generated from
 - [generated.md](generated.md) - generated blocks and the marker that delimits them
