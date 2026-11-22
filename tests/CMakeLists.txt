@@ -91,15 +91,15 @@ set_tests_properties(cli/write PROPERTIES FIXTURES_REQUIRED write-trees RESOURCE
 add_test(NAME self
     COMMAND tarn-check --snapshot ${TARN_SNAPSHOTS}/self.snapshot --repository intisy/tarn ${PROJECT_SOURCE_DIR})
 
-add_test(NAME cli/warn-only-prints-warnings-and-exits-zero
+add_test(NAME cli/warn-only-prints-every-finding-and-exits-zero
     COMMAND ${CMAKE_COMMAND}
         -DPROGRAM=$<TARGET_FILE:tarn-check>
         -DARGUMENTS=--warn-only|${TARN_TREES}/missing-readme
         -DEXPECTED=0
-        "-DHAS=^warned \\.:0 snapshot-absent "
-        -DLACKS=refused
+        "-DHAS=^refused docs/guide:0 missing-readme "
+        "-DHAS_ALSO=warned \\.:0 snapshot-absent "
         -P ${CMAKE_CURRENT_SOURCE_DIR}/expect_exit.cmake)
-set_tests_properties(cli/warn-only-prints-warnings-and-exits-zero PROPERTIES FIXTURES_REQUIRED trees)
+set_tests_properties(cli/warn-only-prints-every-finding-and-exits-zero PROPERTIES FIXTURES_REQUIRED trees)
 
 if(CMAKE_HOST_WIN32)
     set(TARN_STUB_GIT git.cmd)
@@ -257,6 +257,8 @@ if(TARN_BASH)
     tarn_expect_hook(finds-an-org-tree-from-a-subfolder org-tree 1 -DSTART=guide
         "-DHAS=^refused guide:0 missing-readme ")
     tarn_expect_hook(prints-nothing-for-a-clean-tree clean 0)
+    tarn_expect_hook(prints-nothing-in-a-family-beside-its-docs-repo family 0 -DSTART=core/src)
+    tarn_expect_hook(prints-nothing-for-a-version-that-is-not-strict loose-version 0 -DSTART=guide)
     tarn_expect_hook(prints-nothing-without-the-standard no-standard 0)
     tarn_expect_hook(cuts-at-twenty-lines many-findings 21 -DUNLISTED=25 "-DHAS=^tarn: 5 more lines")
     tarn_expect_hook(says-how-to-build-a-missing-checker missing-readme 1

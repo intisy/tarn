@@ -2,15 +2,32 @@
 # A SessionStart hook: prints what the nearest docs tree is missing. It never fails a session, so it always exits 0.
 
 line_limit=20
+carriage_return=$(printf '\r')
 
 is_docs_folder_of_a_repo() {
     [ "${1##*/}" = docs ] && [ ! -e "$1/.git" ] && [ -f "${1%/*}/docs/VERSION" ]
 }
 
+is_repo_tree() {
+    [ -f "$1/docs/VERSION" ] && [ ! -e "$1/docs/.git" ]
+}
+
+follows_strictly() {
+    [ -f "$1" ] || return 1
+    IFS= read -r first_line < "$1" || [ -n "$first_line" ] || return 1
+    first_line=${first_line%"$carriage_return"}
+    number=${first_line#tarn }
+    [ "$number" != "$first_line" ] || return 1
+    case $number in
+        '' | *[!0-9]*) return 1 ;;
+    esac
+    return 0
+}
+
 is_tree_root() {
-    [ -f "$1/docs/VERSION" ] && return 0
+    is_repo_tree "$1" && return 0
     is_docs_folder_of_a_repo "$1" && return 1
-    [ -f "$1/VERSION" ] && grep -q '^tarn [0-9]' "$1/VERSION"
+    follows_strictly "$1/VERSION"
 }
 
 find_tree_root() {

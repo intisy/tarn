@@ -100,8 +100,8 @@ static const adopt_case adopt_cases[] = {
      "create .github/workflows/docs.yml\n"
      "does-not-follow intisy/old\n",
      {"VERSION", "README.md", NULL, NULL, NULL, NULL},
-     TO_WRITE("README.md", "8") TO_WRITE("README.md", "9") TO_WRITE("README.md", "10") TO_WRITE("README.md", "1")
-         TO_WRITE("README.md", "3") TO_WRITE("README.md", "4") TO_WRITE("README.md", "5"),
+     TO_WRITE("README.md", "6") TO_WRITE("README.md", "7") TO_WRITE("README.md", "8") TO_WRITE("README.md", "1")
+         TO_WRITE("README.md", "3"),
      "intisy.snapshot",
      "intisy/docs",
      ADOPT_DONE,
@@ -134,9 +134,10 @@ static const adopt_case adopt_cases[] = {
      "does-not-follow intisy/hidden\n"
      "does-not-follow intisy/old\n",
      {"VERSION", "README.md", "guides/README.md", NULL, NULL, NULL},
-     TO_WRITE("README.md", "6") TO_WRITE("README.md", "7") TO_WRITE("README.md", "8") TO_WRITE("README.md", "9")
-         TO_WRITE("README.md", "10") TO_WRITE("README.md", "11") TO_WRITE("README.md", "1") TO_WRITE("README.md", "3")
-             TO_WRITE("guides/README.md", "1") TO_WRITE("guides/README.md", "3"),
+     TO_WRITE("README.md", "8") TO_WRITE("README.md", "9") TO_WRITE("README.md", "10") TO_WRITE("README.md", "11")
+         TO_WRITE("README.md", "12") TO_WRITE("README.md", "13") TO_WRITE("README.md", "1") TO_WRITE("README.md", "3")
+             TO_WRITE("README.md", "4") TO_WRITE("README.md", "5") TO_WRITE("guides/README.md", "1")
+                 TO_WRITE("guides/README.md", "3"),
      "intisy.snapshot",
      "intisy/records",
      ADOPT_DONE,
@@ -185,8 +186,15 @@ static const caller_line caller_lines[] = {
     {"  pull_request:\n", 1},
     {"  workflow_dispatch:\n", 1},
     {"  schedule:\n", 1},
-    {"  contents: read\n", 1},
-    {"  issues: write\n", 1},
+    {"\npermissions:\n  contents: read\n\njobs:\n", 1},
+    {"\n  issues: write\n", 0},
+    {"issues: write\n", 1},
+    {"  warn:\n"
+     "    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}\n"
+     "    permissions:\n"
+     "      contents: read\n"
+     "      issues: write\n",
+     1},
     {"    uses: intisy/tarn/.github/workflows/check-docs.yml@" STANDARD_REF "\n", 2},
     {"      standard-ref: " STANDARD_REF "\n", 2},
     {"      mode: check\n", 1},

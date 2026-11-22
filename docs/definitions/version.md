@@ -15,8 +15,10 @@ The file that declares which version of the standard a docs tree follows, and ho
    `tarn 1`. A CRLF line ending and a missing final newline are tolerated.
 2. A repo with `docs/VERSION` is a repo docs tree rooted at `docs/`: descent kinds only, records refused.
 3. A repo with a root `VERSION` reading `tarn <n>` is an org docs tree rooted at the repo root: descent kinds plus the
-   named records (`TASKS.md`, `DECISIONS.md`, `HANDOFF.md`, `FAQ.md`, `RULES.md`, `plans/`, `specs/`, `records/`). A
-   public org splits this across two repos: the public one carries the descent tree, a private one the records.
+   records half that `records.md` rule 1 names. A public org splits this across two repos: the public one carries the
+   descent tree and holds no records (checked with a snapshot marking it `public`, each is refused as
+   `record-in-public-tree`), and a private records repo, itself an org docs tree with a root `VERSION`, carries the
+   records and lists them in its README (see `records.md` rules 4 and 5).
 4. At the root of an org tree the checker ignores every entry whose name starts with `.` (`.github/`, `.gitignore`,
    `.gitattributes`), `LICENSE`, and `VERSION`. In a repo tree it reads `docs/` and the root `CONTENT.md` only. The
    root `README.md` of an org tree is a descent README, not a generated one.
@@ -24,8 +26,9 @@ The file that declares which version of the standard a docs tree follows, and ho
 6. A tree declaring an older version is a pin. A pin is temporary and names the task that ends it; the checker warns it
    as `older-version` on line 1 of the version file until it moves, and refuses a version newer than it knows as
    `version-unknown`.
-7. Another repo or org counts as following the standard when its tree has a version file of either kind. The repos
-   snapshot marks such a repo `follows` (see `category.md`).
+7. Another repo or org counts as following the standard when its tree has a version file of either kind whose first
+   line is exactly `tarn <n>`. The repos snapshot marks such a repo `follows` (see `category.md`), and the session
+   hook reads a root `VERSION` the same way.
 8. Each version ships a change list that says exactly what to change, and, where the change is mechanical, an automatic
    upgrade. Version 1 has nothing to upgrade from, so the upgrade command arrives with version 2.
 
@@ -48,6 +51,10 @@ argument `adopt` always means this command, so a repo root of that name is check
    lines list every child the folder already has, so an adopted tree is refused only for what a kept file leaves wrong.
 3. The caller is the thin caller of `intisy/tarn/.github/workflows/check-docs.yml` at `<commit>`: `mode: check` on
    push and pull request, `mode: warn` on a weekly schedule and on a manual run, with `standard-ref` the same commit.
+   Warn mode runs `tarn-check --warn-only`, which prints every finding, refused and warned, and exits 0, so the issue
+   it keeps carries a refusal that an outside change caused (a repo turned private, a target that stopped
+   following), which no push to this repo would show. The caller grants `contents: read` at the top and
+   `issues: write` on the warn job alone, the one job that keeps that issue.
    Both jobs pass the repo's `TARN_TOKEN` secret as `envPAT`, the token `check-docs.yml` lists the owner's private
    repos with; without it the job token sees public repos only, so a private repo would be missing from its own
    snapshot. It never passes `secrets: inherit`, which would hand every secret to the called workflow.

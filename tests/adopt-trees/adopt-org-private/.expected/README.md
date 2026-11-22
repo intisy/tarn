@@ -1,6 +1,8 @@
 to write
 
+- [TASKS.md](TASKS.md) - to write
 - [guides/](guides/) - to write
+- [plans/](plans/) - to write
 
 <!-- generated: org-repos -->
 - [intisy/docs](https://github.com/intisy/docs) - to write

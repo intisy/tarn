@@ -1,38 +1,43 @@
 ---
-name: tarn-docs
+name: tarn
 description: Read and write docs under the tarn standard. Use when a repo or org has a docs/VERSION or a root VERSION reading "tarn <n>", when asked where a doc belongs, or when tarn-check reports refusals.
 ---
 
 # Docs under the tarn standard
 
-A tree that follows the standard has `docs/VERSION` (a repo) or a root `VERSION` reading `tarn <n>` (an org docs repo).
-The definitions of each kind of file are in `docs/definitions/` of `intisy/tarn`.
+The standard is defined in `docs/definitions/` of `intisy/tarn`, one file per kind of file a docs tree may hold
+(https://github.com/intisy/tarn/tree/main/docs/definitions). Those files are the rules; this skill only says which one
+to open. When a rule here and a definition seem to differ, the definition wins.
+
+## Installing
+
+Copy this `skill/` folder into your agent's skills directory under the skill's name, for Claude Code
+`~/.claude/skills/tarn/`, so the folder holds `SKILL.md`. Nothing else is needed; the checker is built separately (see
+Checking).
 
 ## Reading
 
-1. Open the top README of the tree: `docs/README.md`, or the root `README.md` of an org docs repo.
-2. It opens with one paragraph, then one line per child. Pick the one child that can hold your answer.
-3. Open that child. A folder has its own README with the same shape: descend again. A file is prose: read it.
-4. Stop at the first level that answers the question. The bottom of a repo is `docs/source/`, which mirrors each source
-   folder with a doc linking to its files.
-5. A link into another repo or org is followed only where the target has its own version file.
+Start at the top README of the tree and descend: each README names its children, so open the one child that can hold
+the answer and stop at the first level that gives it. Which file is the top, and when a tree counts as following the
+standard, is in `version.md`; the shape of every README is in `folder-readme.md`; the bottom of a repo, the source
+mirror, is in `source.md`; when a link into another repo or org may be followed is in `category.md`.
 
 ## Writing
 
-- A new doc goes in the folder whose README describes it, as a prose `.md` file, and that README gets one new child line
-  in exactly this form: `- [<name>](<name>) - <one line>`; a folder is `- [<name>/](<name>/) - <one line>`.
-- Explaining a source folder: its doc is `docs/source/<path of the folder>/README.md`. Create it when you add code to a
-  folder that has none.
-- Queue, decisions, handoff, FAQ, rules, plans, specs and records are named kinds that only an org docs tree holds.
-  A repo docs tree holds descent kinds only.
-- No other file kind is allowed in a docs tree. A descent doc over 400 lines is warned: turn it into a folder with its own README, or record a size exception as its first line, `<!-- size: <reason> -->`.
-- Hand-written prose only outside `<!-- generated: <what> -->` and `<!-- end generated -->`: never edit a generated
-  block, fix its source and run the writer.
+Find the kind of the file first, then open its definition and follow it:
+
+- a README, and the one accepted form of its child lines: `folder-readme.md`;
+- prose in a category folder, and the size budget: `category.md`;
+- the doc of a source folder: `source.md`;
+- a generated block (never edit one by hand; fix its source and run the writer): `generated.md`;
+- the root `CONTENT.md` of a repo: `content.md`;
+- queue, decisions, handoff, FAQ, rules, plans, specs and records, and which tree may hold them: `records.md` and the
+  definition named after each.
+
+A file whose kind has no definition is not allowed in a docs tree.
 
 ## Checking
 
-- `tarn-check <repo root>` checks the tree and exits 1 when something is refused.
-- `tarn-check --write <repo root>` rewrites the stale generated blocks first, then checks.
-- `tarn-check --quick <repo root>` skips the slow git staleness calls and nothing else.
-- Build it from `intisy/tarn`: `cmake -S . -B build && cmake --build build`.
-- A line reads `refused|warned <path>:<line> <rule> <text>`. Fix every `refused` before finishing.
+Build `tarn-check` from `intisy/tarn` (`cmake -S . -B build && cmake --build build`) and run it on the repo root; the
+usage it prints on a bad argument lists its options, and the definitions describe what each rule it reports means. Each line reads `refused|warned <path>:<line> <rule> <text>`; fix every
+`refused` before finishing.

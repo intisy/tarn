@@ -14,3 +14,6 @@ Case and a www host do not hide it: www.GitHub.com/intisy/secret/issues.
 ```text
 intisy/secret
 ```
+A clone of it, https://github.com/intisy/secret.git, names it.
+So does a clone over ssh, git@github.com:intisy/secret.git.
+Not a name: intisy/secret.github.

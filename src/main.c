@@ -13,7 +13,8 @@ static const char usage[] =
     "usage: tarn-check [--quick] [--write] [--warn-only] [--snapshot <file> --repository <owner>/<name>] "
     "[<repo root>]\n"
     "       tarn-check adopt <repo|org> --standard-ref <commit> [--write] "
-    "[--snapshot <file> --repository <owner>/<name>] [<repo root>]\n";
+    "[--snapshot <file> --repository <owner>/<name>] [<repo root>]\n"
+    "--warn-only prints every finding, refused and warned, and exits 0 whatever was found.\n";
 
 typedef struct {
     const char *repo_root;
@@ -143,13 +144,8 @@ static int run(const command_line *parsed) {
         report_free(&out);
         return EXIT_BAD_USAGE;
     }
-    if (parsed->warn_only) {
-        report_write_warnings(&out, stdout);
-        exit_code = 0;
-    } else {
-        report_write(&out, stdout);
-        exit_code = report_exit_code(&out);
-    }
+    report_write(&out, stdout);
+    exit_code = parsed->warn_only ? 0 : report_exit_code(&out);
     report_free(&out);
     return exit_code;
 }

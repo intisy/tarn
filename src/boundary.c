@@ -10,6 +10,7 @@
 static const char *const link_schemes[] = {"https://", "http://"};
 static const char www_prefix[] = "www.";
 static const char github_host[] = "github.com/";
+static const char clone_suffix[] = ".git";
 
 /** The private repos one line has already been refused for, so a repo named twice on a line is refused once. */
 typedef struct {
@@ -79,7 +80,19 @@ static void consider_name(line_scan *scan, const char *name, size_t length) {
                "names %s, which the snapshot marks private, in a public docs tree", repo->full_name);
 }
 
-/** A path names every repo two adjacent segments of it spell, so `x/<owner>/<name>/plans` names `<owner>/<name>`. */
+/** The length of a pair without a clone URL's `.git`; GitHub refuses a repo name ending in `.git`, so none is lost. */
+static size_t without_clone_suffix(const char *pair, size_t length) {
+    size_t suffix = sizeof clone_suffix - 1;
+    if (length > suffix && prefix_length_ignoring_case(pair + length - suffix, clone_suffix) == suffix) {
+        return length - suffix;
+    }
+    return length;
+}
+
+/**
+ * A path names every repo two adjacent segments of it spell, so `x/<owner>/<name>/plans` names `<owner>/<name>`, and
+ * so does a clone URL, `https://github.com/<owner>/<name>.git` or `git@github.com:<owner>/<name>.git`.
+ */
 static void consider_segment_pairs(line_scan *scan, const char *token, size_t length) {
     const char *first = token;
     const char *end = token + length;
@@ -88,8 +101,9 @@ static void consider_segment_pairs(line_scan *scan, const char *token, size_t le
         const char *second = slash + 1;
         const char *next_slash = memchr(second, '/', (size_t)(end - second));
         const char *pair_end = next_slash == NULL ? end : next_slash;
-        if (snapshot_is_repo_name(first, (size_t)(pair_end - first))) {
-            consider_name(scan, first, (size_t)(pair_end - first));
+        size_t pair_length = without_clone_suffix(first, (size_t)(pair_end - first));
+        if (snapshot_is_repo_name(first, pair_length)) {
+            consider_name(scan, first, pair_length);
         }
         first = second;
         slash = next_slash;

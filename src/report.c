@@ -104,17 +104,6 @@ char *report_format(const report *out) {
     return text;
 }
 
-void report_write_warnings(const report *out, FILE *stream) {
-    size_t index;
-    for (index = 0; index < out->count; index++) {
-        if (out->entries[index].severity == SEVERITY_WARNED) {
-            char *line = format_entry(&out->entries[index]);
-            fputs(line, stream);
-            free(line);
-        }
-    }
-}
-
 void report_write(const report *out, FILE *stream) {
     char *text = report_format(out);
     fputs(text, stream);
