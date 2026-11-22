@@ -26,10 +26,11 @@ Blocks inside a doc that the checker writes, never a person.
 5. The checker regenerates each block and fails on a difference between the file and the regenerated text, as
    `generated-block-stale` at the block's first line. `tarn-check --write` rewrites the stale blocks in place instead,
    keeping the file's line endings and byte order mark and touching nothing outside a block, and then checks as usual.
-   In version 1 only `source-children` is regenerated; an `org-repos` block is accepted as it stands, and its lines are
-   not child lines of the README.
+   `source-children` is regenerated from the source folder, and an `org-repos` block is regenerated from the repos
+   snapshot once one is given; its lines are not child lines of the README.
 6. Blocks do not nest, and an unmatched marker is refused: `generated-nested` for a start inside a block,
-   `generated-unterminated` for a start with no end, and `generated-marker-unmatched` for an end with no start. A
-   `<what>` that is not one of the two kinds is refused as `generated-kind-unknown`, and `source-children` outside a
-   README under `docs/source/` as `generated-kind-misplaced`. A file with a refused marker is never rewritten.
+   `generated-unterminated` for a start with no end, `generated-marker-unmatched` for an end with no start, and
+   `generated-block-duplicate` for a second block of the same kind in one file. A `<what>` that is not one of the two kinds is refused as
+   `generated-kind-unknown`, and `source-children` outside a README under `docs/source/` as
+   `generated-kind-misplaced`. A file with a refused marker is never rewritten.
 7. Generated output never appears outside a marked block.

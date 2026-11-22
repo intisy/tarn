@@ -34,7 +34,7 @@ file(GLOB TARN_WRITE_CASES LIST_DIRECTORIES true CONFIGURE_DEPENDS RELATIVE ${CM
     ${CMAKE_CURRENT_SOURCE_DIR}/write-trees/*)
 foreach(case IN LISTS TARN_WRITE_CASES)
     add_test(NAME generate/${case} COMMAND generate_test ${TARN_WRITE_TREES} ${case})
-    set_tests_properties(generate/${case} PROPERTIES FIXTURES_REQUIRED write-trees)
+    set_tests_properties(generate/${case} PROPERTIES FIXTURES_REQUIRED write-trees RESOURCE_LOCK write-trees)
 endforeach()
 
 function(tarn_expect_exit name expected argument)
@@ -51,5 +51,14 @@ tarn_expect_exit(passes-a-clean-tree 0 ${TARN_TREES}/anchor-link)
 tarn_expect_exit(refuses-a-broken-tree 1 ${TARN_TREES}/missing-readme)
 tarn_expect_exit(refuses-an-unknown-option 2 --no-such-option)
 tarn_expect_exit(refuses-a-missing-root 2 ${TARN_TREES}/no-such-tree)
+
+add_test(NAME cli/write
+    COMMAND ${CMAKE_COMMAND}
+        -DPROGRAM=$<TARGET_FILE:tarn-check>
+        -DTREE=${TARN_WRITE_TREES}/write-source-children
+        -DWORKING=${CMAKE_CURRENT_BINARY_DIR}/cli-write
+        -DFILE=docs/source/src/README.md
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/expect_write.cmake)
+set_tests_properties(cli/write PROPERTIES FIXTURES_REQUIRED write-trees RESOURCE_LOCK write-trees)
 
 add_test(NAME self COMMAND tarn-check ${PROJECT_SOURCE_DIR})
