@@ -2,6 +2,7 @@ The repo root of tarn: one CMake project that builds `tarn-check`, the C11 progr
 
 <!-- generated: source-children -->
 - [CMakeLists.txt](../../CMakeLists.txt) - the project: the C11 settings, the strict warnings, the checker's modules and the program
+- [hook/](hook/) - the session-start reminder script, which runs the checker's quick mode and prints what a docs tree is missing
 - [src/](src/) - the checker: the walk of a docs tree and the source tree, and every rule it refuses or warns by
 - [tests/](tests/) - the fixture trees, one mini repo per case, and the runner that asserts each one's exact report
 <!-- end generated -->

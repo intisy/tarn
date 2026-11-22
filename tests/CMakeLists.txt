@@ -219,3 +219,31 @@ tarn_expect_adopt_refusal(adopt-repo-refuses-a-case-differing-folder
     adopt repo --standard-ref ${TARN_STANDARD_REF} ${TARN_ADOPT_TREES}/adopt-refuses-case-differing-folder)
 tarn_expect_adopt_refusal(adopt-repo-refuses-an-unwritable-folder
     adopt repo --standard-ref ${TARN_STANDARD_REF} --write ${TARN_ADOPT_TREES}/adopt-refuses-unwritable)
+
+if(CMAKE_HOST_WIN32)
+    find_program(TARN_BASH bash HINTS "C:/Program Files/Git/bin" "C:/Program Files/Git/usr/bin" NO_DEFAULT_PATH)
+endif()
+find_program(TARN_BASH bash)
+
+function(tarn_expect_hook name tree expected_lines)
+    add_test(NAME hook/${name}
+        COMMAND ${CMAKE_COMMAND}
+            -DBASH=${TARN_BASH}
+            -DHOOK=${PROJECT_SOURCE_DIR}/hook/session-start.sh
+            -DCHECKER=$<TARGET_FILE:tarn-check>
+            -DTREE=${CMAKE_CURRENT_SOURCE_DIR}/hook-trees/${tree}
+            -DEXPECTED_LINES=${expected_lines}
+            ${ARGN}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/expect_hook.cmake)
+endfunction()
+
+if(TARN_BASH)
+    tarn_expect_hook(prints-the-refusal missing-readme 1 "-DHAS=^refused docs/guide:0 missing-readme ")
+    tarn_expect_hook(prints-nothing-for-a-clean-tree clean 0)
+    tarn_expect_hook(prints-nothing-without-the-standard no-standard 0)
+    tarn_expect_hook(cuts-at-twenty-lines many-findings 21 -DUNLISTED=25 "-DHAS=\ntarn: 5 more lines")
+    tarn_expect_hook(says-how-to-build-a-missing-checker missing-readme 1
+        -DCHECKER=${CMAKE_CURRENT_BINARY_DIR}/no-such-checker "-DHAS=build it from intisy/tarn")
+else()
+    message(WARNING "bash was not found, so the hook tests are not registered")
+endif()
