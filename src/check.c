@@ -157,6 +157,10 @@ int check_context_open_as(const char *repo_root, tree_kind kind, report *out, ch
     return 1;
 }
 
+int check_version_is_foreign(const char *repo_root, const char *relative) {
+    return read_version(repo_root, relative).state == VERSION_MALFORMED;
+}
+
 int check_version_decides(const char *repo_root, tree_kind kind) {
     if (kind == TREE_REPO) {
         return read_version(repo_root, "docs/VERSION").state != VERSION_ABSENT;

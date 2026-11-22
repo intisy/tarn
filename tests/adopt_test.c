@@ -25,6 +25,12 @@ typedef struct {
     /** NULL, or the snapshot file and the repository both the adoption and the check run with. */
     const char *snapshot;
     const char *repository;
+    /**
+     * What adopting with --write returns, and blocking the path it names when it is not ADOPT_DONE. A run without
+     * --write returns the same, except that only a write can meet ADOPT_UNWRITABLE.
+     */
+    int result;
+    const char *blocking;
 } adopt_case;
 
 typedef struct {
@@ -56,6 +62,8 @@ static const adopt_case adopt_cases[] = {
                      TO_WRITE("docs/source/src/README.md", "1") TO_WRITE("docs/source/src/net/README.md", "1")
                          SNAPSHOT_ABSENT,
      NULL,
+     NULL,
+     ADOPT_DONE,
      NULL},
     {"adopt-repo-keeps",
      ADOPT_REPO,
@@ -67,6 +75,8 @@ static const adopt_case adopt_cases[] = {
      {"docs/VERSION", "docs/README.md", "docs/source/README.md", "docs/source/src/README.md", NULL, NULL},
      TO_WRITE("docs/source/README.md", "4") TO_WRITE("docs/source/README.md", "1") SNAPSHOT_ABSENT,
      NULL,
+     NULL,
+     ADOPT_DONE,
      NULL},
     {"adopt-repo-case-differs",
      ADOPT_REPO,
@@ -80,6 +90,8 @@ static const adopt_case adopt_cases[] = {
          "refused docs:0 missing-readme folder has no README.md\n" TO_WRITE("docs/source/README.md", "1")
              TO_WRITE("docs/source/src/README.md", "1") SNAPSHOT_ABSENT,
      NULL,
+     NULL,
+     ADOPT_DONE,
      NULL},
     {"adopt-org",
      ADOPT_ORG,
@@ -91,23 +103,108 @@ static const adopt_case adopt_cases[] = {
      TO_WRITE("README.md", "8") TO_WRITE("README.md", "9") TO_WRITE("README.md", "10") TO_WRITE("README.md", "1")
          TO_WRITE("README.md", "3") TO_WRITE("README.md", "4") TO_WRITE("README.md", "5"),
      "intisy.snapshot",
-     "intisy/docs"},
+     "intisy/docs",
+     ADOPT_DONE,
+     NULL},
+    {"adopt-repo-existing-folders",
+     ADOPT_REPO,
+     "create docs/VERSION\n"
+     "create docs/README.md\n"
+     "create docs/guides/README.md\n"
+     "create docs/guides/deep/README.md\n"
+     "create docs/source/README.md\n"
+     "create docs/source/src/README.md\n"
+     "create .github/workflows/docs.yml\n",
+     {"docs/README.md", "docs/guides/README.md", "docs/guides/deep/README.md", NULL, NULL, NULL},
+     TO_WRITE("docs/source/README.md", "4") TO_WRITE("docs/source/src/README.md", "4") TO_WRITE("docs/README.md", "1")
+         TO_WRITE("docs/README.md", "3") TO_WRITE("docs/guides/README.md", "1") TO_WRITE("docs/guides/README.md", "3")
+             TO_WRITE("docs/guides/README.md", "4") TO_WRITE("docs/guides/deep/README.md", "1")
+                 TO_WRITE("docs/guides/deep/README.md", "3") TO_WRITE("docs/source/README.md", "1")
+                     TO_WRITE("docs/source/src/README.md", "1") SNAPSHOT_ABSENT,
+     NULL,
+     NULL,
+     ADOPT_DONE,
+     NULL},
+    {"adopt-org-private",
+     ADOPT_ORG,
+     "create VERSION\n"
+     "create README.md\n"
+     "create guides/README.md\n"
+     "create .github/workflows/docs.yml\n"
+     "does-not-follow intisy/hidden\n"
+     "does-not-follow intisy/old\n",
+     {"VERSION", "README.md", "guides/README.md", NULL, NULL, NULL},
+     TO_WRITE("README.md", "6") TO_WRITE("README.md", "7") TO_WRITE("README.md", "8") TO_WRITE("README.md", "9")
+         TO_WRITE("README.md", "10") TO_WRITE("README.md", "11") TO_WRITE("README.md", "1") TO_WRITE("README.md", "3")
+             TO_WRITE("guides/README.md", "1") TO_WRITE("guides/README.md", "3"),
+     "intisy.snapshot",
+     "intisy/records",
+     ADOPT_DONE,
+     NULL},
+    {"adopt-refuses-foreign-version",
+     ADOPT_ORG,
+     "",
+     {NULL, NULL, NULL, NULL, NULL, NULL},
+     NULL,
+     "intisy.snapshot",
+     "intisy/docs",
+     ADOPT_VERSION_FOREIGN,
+     "VERSION"},
+    {"adopt-refuses-case-differing-folder",
+     ADOPT_REPO,
+     "",
+     {NULL, NULL, NULL, NULL, NULL, NULL},
+     NULL,
+     NULL,
+     NULL,
+     ADOPT_CASE_DIFFERS,
+     "docs"},
+    {"adopt-refuses-unwritable",
+     ADOPT_REPO,
+     "create docs/VERSION\n"
+     "create docs/README.md\n"
+     "create docs/source/README.md\n"
+     "create docs/source/src/README.md\n"
+     "create .github/workflows/docs.yml\n",
+     {NULL, NULL, NULL, NULL, NULL, NULL},
+     NULL,
+     NULL,
+     NULL,
+     ADOPT_UNWRITABLE,
+     "docs/VERSION"},
 };
 
+typedef struct {
+    const char *line;
+    size_t times;
+} caller_line;
+
 /** Lines of the caller asserted on their own, so a wrong template cannot pass by being compared with itself. */
-static const char *const caller_lines[] = {
-    "  push:\n",
-    "  pull_request:\n",
-    "  workflow_dispatch:\n",
-    "  schedule:\n",
-    "  contents: read\n",
-    "  issues: write\n",
-    "    uses: intisy/tarn/.github/workflows/check-docs.yml@" STANDARD_REF "\n",
-    "      standard-ref: " STANDARD_REF "\n",
-    "      mode: check\n",
-    "      mode: warn\n",
-    "      default-branch: ${{ github.ref_name }}\n",
+static const caller_line caller_lines[] = {
+    {"  push:\n", 1},
+    {"  pull_request:\n", 1},
+    {"  workflow_dispatch:\n", 1},
+    {"  schedule:\n", 1},
+    {"  contents: read\n", 1},
+    {"  issues: write\n", 1},
+    {"    uses: intisy/tarn/.github/workflows/check-docs.yml@" STANDARD_REF "\n", 2},
+    {"      standard-ref: " STANDARD_REF "\n", 2},
+    {"      mode: check\n", 1},
+    {"      mode: warn\n", 1},
+    {"      default-branch: ${{ github.ref_name }}\n", 1},
+    {"    secrets:\n      envPAT: ${{ secrets.TARN_TOKEN }}\n", 2},
+    {"inherit", 0},
 };
+
+static size_t occurrences(const char *text, const char *wanted) {
+    size_t count = 0;
+    const char *found = text;
+    while ((found = strstr(found, wanted)) != NULL) {
+        count++;
+        found += strlen(wanted);
+    }
+    return count;
+}
 
 static const adopt_case *find_case(const char *name) {
     size_t index;
@@ -211,7 +308,21 @@ static int text_matches(const char *label, const char *actual, const char *expec
     return same;
 }
 
-static int adopt_and_compare(const char *root, adopt_options *options, const char *label, const char *expected) {
+static int same_blocking(const char *label, const adopt_outcome *outcome, const char *expected) {
+    const char *actual = outcome->blocking == NULL ? "(none)" : outcome->blocking;
+    if (expected == NULL) {
+        expected = "(none)";
+    }
+    if (strcmp(actual, expected) != 0) {
+        fprintf(stderr, "%s: blocked by %s, expected %s\n", label, actual, expected);
+        return 0;
+    }
+    return 1;
+}
+
+/** Adopts once and compares the result, the path blocking it and the plan with what is expected. */
+static int adopt_and_compare_result(const char *root, adopt_options *options, const char *label, int expected_result,
+                                    const char *expected_blocking, const char *expected_plan) {
     adopt_outcome outcome;
     int result;
     char *plan;
@@ -219,13 +330,18 @@ static int adopt_and_compare(const char *root, adopt_options *options, const cha
     adopt_outcome_init(&outcome);
     result = adopt_tree(root, options, &outcome);
     plan = joined_lines(&outcome.lines);
-    passed = result == ADOPT_DONE && text_matches(label, plan, expected);
-    if (result != ADOPT_DONE) {
-        fprintf(stderr, "%s: adopt_tree returned %d\n", label, result);
+    passed = result == expected_result;
+    if (!passed) {
+        fprintf(stderr, "%s: adopt_tree returned %d, expected %d\n", label, result, expected_result);
     }
+    passed = passed && same_blocking(label, &outcome, expected_blocking) && text_matches(label, plan, expected_plan);
     free(plan);
     adopt_outcome_free(&outcome);
     return passed;
+}
+
+static int adopt_and_compare(const char *root, adopt_options *options, const char *label, const char *expected) {
+    return adopt_and_compare_result(root, options, label, ADOPT_DONE, NULL, expected);
 }
 
 static int same_bytes(const char *actual_path, const char *expected_path) {
@@ -274,8 +390,9 @@ static int caller_matches(const char *root) {
     int passed = path != NULL && directory_read_file(path, &content, &length) == 0;
     passed = passed && text_matches("the workflow caller", content, expected);
     for (index = 0; passed && index < sizeof caller_lines / sizeof caller_lines[0]; index++) {
-        if (strstr(content, caller_lines[index]) == NULL) {
-            fprintf(stderr, "the workflow caller lacks the line %s", caller_lines[index]);
+        const caller_line *wanted = &caller_lines[index];
+        if (occurrences(content, wanted->line) != wanted->times) {
+            fprintf(stderr, "the workflow caller does not hold %zu times:\n%s\n", wanted->times, wanted->line);
             passed = 0;
         }
     }
@@ -333,6 +450,23 @@ static int run_again(const char *root, adopt_options *options, const adopt_case 
     return passed;
 }
 
+/** A refused adoption prints no plan and leaves the tree as it was, with --write and without. */
+static int run_refusal(const char *root, adopt_options *options, const adopt_case *expected) {
+    char *before = fingerprint(root);
+    int dry_result = expected->result == ADOPT_UNWRITABLE ? ADOPT_DONE : expected->result;
+    const char *dry_blocking = expected->result == ADOPT_UNWRITABLE ? NULL : expected->blocking;
+    const char *written_plan = expected->result == ADOPT_UNWRITABLE ? expected->plan : "";
+    int passed;
+    options->write = 0;
+    passed = adopt_and_compare_result(root, options, "without --write", dry_result, dry_blocking, expected->plan);
+    options->write = 1;
+    passed = passed && adopt_and_compare_result(root, options, "with --write", expected->result, expected->blocking,
+                                                written_plan);
+    passed = passed && tree_unchanged("a refused adoption", root, before);
+    free(before);
+    return passed;
+}
+
 static int run_adoption(const char *root, adopt_options *options, const adopt_case *expected) {
     int passed = run_dry(root, options, expected);
     options->write = 1;
@@ -353,7 +487,11 @@ static int run_case(const char *trees, const char *snapshots, const adopt_case *
         options.snapshot = &snapshot;
         options.repository = expected->repository;
     }
-    passed = passed && run_adoption(root, &options, expected);
+    if (passed && expected->result != ADOPT_DONE) {
+        passed = run_refusal(root, &options, expected);
+    } else {
+        passed = passed && run_adoption(root, &options, expected);
+    }
     snapshot_free(&snapshot);
     free(root);
     return passed ? 0 : 1;

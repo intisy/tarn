@@ -173,7 +173,7 @@ add_test(NAME cli/adopt-plans-without-writing
         -DPROGRAM=$<TARGET_FILE:tarn-check>
         -DARGUMENTS=adopt|repo|--standard-ref|${TARN_STANDARD_REF}|${TARN_TREES}/anchor-link
         -DEXPECTED=0
-        "-DHAS=^keep docs/VERSION\nkeep docs/README\\.md\ncreate \\.github/workflows/docs\\.yml\n$"
+        "-DHAS=^keep docs/VERSION\nkeep docs/README\\.md\nkeep docs/core/README\\.md\ncreate \\.github/workflows/docs\\.yml\n$"
         -P ${CMAKE_CURRENT_SOURCE_DIR}/expect_exit.cmake)
 set_tests_properties(cli/adopt-plans-without-writing PROPERTIES FIXTURES_REQUIRED trees)
 
@@ -185,3 +185,22 @@ add_test(NAME cli/adopt-writes
         -DWORKING=${CMAKE_CURRENT_BINARY_DIR}/cli-adopt
         -DSTANDARD_REF=${TARN_STANDARD_REF}
         -P ${CMAKE_CURRENT_SOURCE_DIR}/expect_adopt.cmake)
+
+function(tarn_expect_adopt_refusal name)
+    list(JOIN ARGN "|" arguments)
+    add_test(NAME cli/${name}
+        COMMAND ${CMAKE_COMMAND}
+            -DPROGRAM=$<TARGET_FILE:tarn-check>
+            -DARGUMENTS=${arguments}
+            -DEXPECTED=1
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/expect_exit.cmake)
+    set_tests_properties(cli/${name} PROPERTIES FIXTURES_REQUIRED adopt-trees RESOURCE_LOCK adopt-trees)
+endfunction()
+
+tarn_expect_adopt_refusal(adopt-org-refuses-a-foreign-version
+    adopt org --standard-ref ${TARN_STANDARD_REF} --snapshot ${TARN_SNAPSHOTS}/intisy.snapshot --repository intisy/docs
+    ${TARN_ADOPT_TREES}/adopt-refuses-foreign-version)
+tarn_expect_adopt_refusal(adopt-repo-refuses-a-case-differing-folder
+    adopt repo --standard-ref ${TARN_STANDARD_REF} ${TARN_ADOPT_TREES}/adopt-refuses-case-differing-folder)
+tarn_expect_adopt_refusal(adopt-repo-refuses-an-unwritable-folder
+    adopt repo --standard-ref ${TARN_STANDARD_REF} --write ${TARN_ADOPT_TREES}/adopt-refuses-unwritable)

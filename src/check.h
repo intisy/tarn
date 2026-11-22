@@ -44,5 +44,7 @@ void check_context_close(check_context *context);
  * in any state, and a root VERSION reading `tarn <n>` (a root VERSION of another form is a project's own, not tarn's).
  */
 int check_version_decides(const char *repo_root, tree_kind kind);
+/** Whether relative names a file that is not a tarn version file, such as a project's own `VERSION` reading 1.2.3. */
+int check_version_is_foreign(const char *repo_root, const char *relative);
 
 #endif
