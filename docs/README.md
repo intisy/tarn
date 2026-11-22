@@ -2,3 +2,4 @@ tarn is a docs standard you descend like folders, and this is its own docs tree,
 
 - [definitions/](definitions/) - the standard itself: one file per kind of file a docs tree may hold
 - [source/](source/) - the mirror of the source tree: tarn-check, its build and its tests
+- [oversized.md](oversized.md) - a page over the size budget, kept to prove the drift issue
