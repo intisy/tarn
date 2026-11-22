@@ -3,6 +3,7 @@
 
 #include "ignore.h"
 #include "report.h"
+#include "snapshot.h"
 #include "string_list.h"
 
 typedef enum { TREE_REPO, TREE_ORG } tree_kind;
@@ -14,6 +15,9 @@ typedef struct {
     const char *descent_root;
     ignore_rules ignore;
     string_list code_folders;
+    /** The repos snapshot and the checked repo's line in it, both NULL when no snapshot was given. */
+    const repos_snapshot *snapshot;
+    const snapshot_repo *self;
     report *out;
 } check_context;
 

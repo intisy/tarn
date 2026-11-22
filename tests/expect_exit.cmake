@@ -1,4 +1,5 @@
-execute_process(COMMAND "${PROGRAM}" "${ARGUMENT}" RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE errors)
+string(REPLACE "|" ";" arguments "${ARGUMENTS}")
+execute_process(COMMAND "${PROGRAM}" ${arguments} RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE errors)
 if(NOT "${result}" STREQUAL "${EXPECTED}")
-    message(FATAL_ERROR "tarn-check ${ARGUMENT} exited ${result}, expected ${EXPECTED}\n${output}${errors}")
+    message(FATAL_ERROR "tarn-check ${arguments} exited ${result}, expected ${EXPECTED}\n${output}${errors}")
 endif()

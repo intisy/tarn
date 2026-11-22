@@ -130,19 +130,49 @@ void check_context_close(check_context *context) {
     string_list_free(&context->code_folders);
 }
 
+static const snapshot_repo *find_self(const check_options *options) {
+    if (options->repository == NULL) {
+        return NULL;
+    }
+    return snapshot_find(options->snapshot, options->repository, strlen(options->repository));
+}
+
+static void warn_snapshot_absent(report *out) {
+    report_add(out, SEVERITY_WARNED, "", 0, "snapshot-absent",
+               "no repos snapshot was given, so public-names-private and link-into-nonstandard were skipped and "
+               "org-repos blocks were left as they are");
+}
+
+static void run_checks(check_context *context, const check_options *options) {
+    generate_blocks(context, options->write);
+    walk_descent_tree(context);
+    if (context->kind == TREE_REPO) {
+        walk_check_mirror_complete(context);
+    }
+    if (context->snapshot == NULL) {
+        warn_snapshot_absent(context->out);
+    }
+}
+
 int check_tree(const char *repo_root, const check_options *options, report *out) {
     check_context context;
-    int opened = check_context_open(repo_root, out, &context);
-    if (opened < 0) {
-        return -1;
-    }
-    if (opened > 0) {
-        generate_blocks(&context, options->write);
-        walk_descent_tree(&context);
-        if (context.kind == TREE_REPO) {
-            walk_check_mirror_complete(&context);
+    const snapshot_repo *self = NULL;
+    int opened;
+    if (options->snapshot != NULL) {
+        self = find_self(options);
+        if (self == NULL) {
+            return CHECK_REPOSITORY_UNKNOWN;
         }
     }
+    opened = check_context_open(repo_root, out, &context);
+    if (opened < 0) {
+        return CHECK_NOT_A_FOLDER;
+    }
+    if (opened > 0) {
+        context.snapshot = options->snapshot;
+        context.self = self;
+        run_checks(&context, options);
+    }
     check_context_close(&context);
-    return 0;
+    return CHECK_DONE;
 }

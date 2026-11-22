@@ -1,3 +1,4 @@
 * text=auto eol=lf
 tests/trees/crlf-bom/** -text
 tests/write-trees/write-crlf-bom/** -text
+tests/snapshots/crlf-bom.snapshot -text

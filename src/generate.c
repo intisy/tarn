@@ -1,8 +1,8 @@
 #include "generate.h"
 
-#include "check.h"
 #include "directory.h"
 #include "memory.h"
+#include "org_repos.h"
 #include "path.h"
 #include "rules.h"
 #include "source_children.h"
@@ -204,6 +204,10 @@ static int same_lines(const string_list *left, const string_list *right) {
     return 1;
 }
 
+static int is_org_root_readme(const generated_file *file) {
+    return file->context->kind == TREE_ORG && strcmp(file->path, "README.md") == 0;
+}
+
 static int accept_kind(const generated_file *file, const generated_block *block, block_kind kind) {
     size_t line = file->document.lines[block->first].number;
     if (kind == KIND_UNKNOWN) {
@@ -216,6 +220,25 @@ static int accept_kind(const generated_file *file, const generated_block *block,
                    "source-children belongs in the README of a folder under docs/source");
         return 0;
     }
+    if (kind == KIND_ORG_REPOS && !is_org_root_readme(file)) {
+        report_add(file->context->out, SEVERITY_REFUSED, file->path, line, "generated-kind-misplaced",
+                   "org-repos belongs in the root README of an org docs tree");
+        return 0;
+    }
+    return 1;
+}
+
+/** Builds the block's lines into expected; returns 0 when this run has nothing to build them from. */
+static int generate_lines(const generated_file *file, block_kind kind, const string_list *current,
+                          string_list *expected) {
+    if (kind == KIND_SOURCE_CHILDREN) {
+        source_children_lines(file->context, file->mirrored, current, expected);
+        return 1;
+    }
+    if (file->context->snapshot == NULL) {
+        return 0;
+    }
+    org_repos_lines(file->context, current, expected);
     return 1;
 }
 
@@ -224,17 +247,13 @@ static void resolve_body(const generated_file *file, const generated_block *bloc
                          const string_list *current, string_list *final_lines, int *rewrite) {
     string_list expected;
     int stale = 0;
-    *rewrite = 0;
-    if (kind == KIND_SOURCE_CHILDREN) {
-        string_list_init(&expected);
-        source_children_lines(file->context, file->mirrored, current, &expected);
+    string_list_init(&expected);
+    if (generate_lines(file, kind, current, &expected)) {
         stale = !same_lines(current, &expected);
-        *rewrite = stale && file->write;
-        copy_lines(*rewrite ? &expected : current, final_lines);
-        string_list_free(&expected);
-    } else {
-        copy_lines(current, final_lines);
     }
+    *rewrite = stale && file->write;
+    copy_lines(*rewrite ? &expected : current, final_lines);
+    string_list_free(&expected);
     if (stale && !file->write) {
         report_add(file->context->out, SEVERITY_REFUSED, file->path, file->document.lines[block->first].number,
                    "generated-block-stale",
@@ -242,14 +261,31 @@ static void resolve_body(const generated_file *file, const generated_block *bloc
     }
 }
 
-static void warn_unwritten(const generated_file *file, const generated_block *block, long shift,
+static size_t final_line_number(const generated_file *file, const generated_block *block, long shift, size_t index) {
+    return (size_t)((long)file->document.lines[block->first].number + shift) + 1 + index;
+}
+
+static void refuse_org_repos_forms(const generated_file *file, const generated_block *block, long shift,
+                                   const string_list *lines) {
+    size_t index;
+    for (index = 0; index < lines->count; index++) {
+        if (!org_repos_is_line(lines->items[index])) {
+            report_add(file->context->out, SEVERITY_REFUSED, file->path, final_line_number(file, block, shift, index),
+                       "generated-line-form",
+                       "an org-repos line reads - [<owner>/<name>](https://github.com/<owner>/<name>) - <text>");
+        }
+    }
+}
+
+static void warn_unwritten(const generated_file *file, const generated_block *block, block_kind kind, long shift,
                            const string_list *lines) {
     size_t index;
     for (index = 0; index < lines->count; index++) {
-        if (source_children_is_unwritten(lines->items[index])) {
-            size_t number = (size_t)((long)file->document.lines[block->first].number + shift) + 1 + index;
-            report_add(file->context->out, SEVERITY_WARNED, file->path, number, "prose-to-write",
-                       "the text to write is a placeholder for a person to replace");
+        const char *line = lines->items[index];
+        int unwritten = kind == KIND_ORG_REPOS ? org_repos_is_unwritten(line) : source_children_is_unwritten(line);
+        if (unwritten) {
+            report_add(file->context->out, SEVERITY_WARNED, file->path, final_line_number(file, block, shift, index),
+                       "prose-to-write", "the text to write is a placeholder for a person to replace");
         }
     }
 }
@@ -279,7 +315,10 @@ static void process_block(const generated_file *file, const generated_block *blo
     string_list_init(&final_lines);
     copy_body(file, block, &current);
     resolve_body(file, block, kind, &current, &final_lines, &rewrite);
-    warn_unwritten(file, block, state->shift, &final_lines);
+    if (kind == KIND_ORG_REPOS) {
+        refuse_org_repos_forms(file, block, state->shift, &final_lines);
+    }
+    warn_unwritten(file, block, kind, state->shift, &final_lines);
     if (rewrite) {
         append_replacement(file, block, &final_lines, state);
         state->shift += (long)final_lines.count - (long)current.count;
@@ -376,17 +415,4 @@ static void generate_folder(const check_context *context, const char *folder, in
 
 void generate_blocks(const check_context *context, int write) {
     generate_folder(context, context->descent_root, write);
-}
-
-int regenerate(const char *repo_root, int write, report *out) {
-    check_context context;
-    int opened = check_context_open(repo_root, out, &context);
-    if (opened < 0) {
-        return -1;
-    }
-    if (opened > 0) {
-        generate_blocks(&context, write);
-    }
-    check_context_close(&context);
-    return 0;
 }

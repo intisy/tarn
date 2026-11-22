@@ -1,6 +1,7 @@
 #include "check.h"
-#include "generate.h"
 #include "report.h"
+#include "snapshot.h"
+#include "test_snapshot.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,23 +11,40 @@ typedef struct {
     const char *name;
     const char *report;
     const char *files[3];
+    /** NULL, or the snapshot file and the repository the case runs with. */
+    const char *snapshot;
+    const char *repository;
 } write_case;
+
+#define SNAPSHOT_ABSENT                                                                                              \
+    "warned .:0 snapshot-absent no repos snapshot was given, so public-names-private and link-into-nonstandard "   \
+    "were skipped and org-repos blocks were left as they are\n"
+#define TO_WRITE(path, line)                                                                                         \
+    "warned " path ":" line " prose-to-write the text to write is a placeholder for a person to replace\n"
 
 static const write_case write_cases[] = {
     {"write-source-children",
-     "warned docs/source/src/README.md:4 prose-to-write the text to write is a placeholder for a person to replace\n"
-     "warned docs/source/src/README.md:6 prose-to-write the text to write is a placeholder for a person to replace\n"
-     "warned docs/source/src/README.md:7 prose-to-write the text to write is a placeholder for a person to replace\n",
-     {"docs/source/src/README.md", NULL, NULL}},
+     TO_WRITE("docs/source/src/README.md", "4") TO_WRITE("docs/source/src/README.md", "6")
+         TO_WRITE("docs/source/src/README.md", "7") SNAPSHOT_ABSENT,
+     {"docs/source/src/README.md", NULL, NULL},
+     NULL,
+     NULL},
     {"write-crlf-bom",
-     "warned docs/source/src/README.md:4 prose-to-write the text to write is a placeholder for a person to replace\n",
-     {"docs/source/src/README.md", NULL, NULL}},
+     TO_WRITE("docs/source/src/README.md", "4") SNAPSHOT_ABSENT,
+     {"docs/source/src/README.md", NULL, NULL},
+     NULL,
+     NULL},
     {"write-outside-untouched",
-     "warned docs/source/src/README.md:5 prose-to-write the text to write is a placeholder for a person to replace\n",
-     {"docs/source/src/README.md", "docs/guide.md", "docs/README.md"}},
+     TO_WRITE("docs/source/src/README.md", "5") SNAPSHOT_ABSENT,
+     {"docs/source/src/README.md", "docs/guide.md", "docs/README.md"},
+     NULL,
+     NULL},
     {"write-leaves-broken-file",
-     "refused docs/source/src/README.md:3 generated-unterminated the block has no end marker\n",
-     {"docs/source/src/README.md", NULL, NULL}},
+     "refused docs/source/src/README.md:3 generated-unterminated the block has no end marker\n" SNAPSHOT_ABSENT,
+     {"docs/source/src/README.md", NULL, NULL},
+     NULL,
+     NULL},
+    {"write-org-repos", TO_WRITE("README.md", "5"), {"README.md", NULL, NULL}, "intisy.snapshot", "intisy/docs"},
 };
 
 static const write_case *find_case(const char *name) {
@@ -37,19 +55,6 @@ static const write_case *find_case(const char *name) {
         }
     }
     return NULL;
-}
-
-static char *join_path(const char *base, const char *middle, const char *name) {
-    size_t length = strlen(base) + strlen(middle) + strlen(name) + 3;
-    char *path = malloc(length);
-    if (path != NULL) {
-        int written = snprintf(path, length, "%s/%s%s%s", base, middle, middle[0] == '\0' ? "" : "/", name);
-        if (written < 0 || (size_t)written >= length) {
-            free(path);
-            return NULL;
-        }
-    }
-    return path;
 }
 
 static char *read_bytes(const char *path, size_t *length) {
@@ -106,14 +111,16 @@ static int report_matches(const char *label, report *out, const char *expected) 
 }
 
 static int file_matches(const char *root, const char *relative) {
-    char *actual = join_path(root, "", relative);
-    char *expected = join_path(root, "expected", relative);
+    char *actual = test_path_join(root, relative);
+    char *expected_folder = test_path_join(root, ".expected");
+    char *expected = expected_folder == NULL ? NULL : test_path_join(expected_folder, relative);
     int same = actual != NULL && expected != NULL && same_bytes(actual, expected);
     if (!same) {
-        fprintf(stderr, "%s differs from expected/%s\n", relative, relative);
+        fprintf(stderr, "%s differs from .expected/%s\n", relative, relative);
     }
     free(actual);
     free(expected);
+    free(expected_folder);
     return same;
 }
 
@@ -126,31 +133,46 @@ static int files_match(const char *root, const write_case *expected) {
     return all;
 }
 
-static int run_case(const char *trees, const write_case *expected) {
-    check_options options = {NULL, 0, 0};
-    char *root = join_path(trees, "", expected->name);
-    report written;
-    report checked;
+static int check_report_matches(const char *label, const char *root, const check_options *options,
+                                const char *expected) {
+    report out;
+    int same;
+    report_init(&out);
+    same = check_tree(root, options, &out) == CHECK_DONE && report_matches(label, &out, expected);
+    report_free(&out);
+    return same;
+}
+
+/** Runs `--write`, compares the files, then checks again and expects the same report, so no stale block remains. */
+static int write_and_check(const char *root, check_options *options, const write_case *expected) {
     int passed;
-    if (root == NULL) {
-        return 1;
-    }
-    report_init(&written);
-    report_init(&checked);
-    passed = regenerate(root, 1, &written) == 0 && report_matches("regenerate", &written, expected->report);
+    options->write = 1;
+    passed = check_report_matches("write", root, options, expected->report);
     passed = passed && files_match(root, expected);
-    passed = passed && check_tree(root, &options, &checked) == 0 &&
-             report_matches("check after write", &checked, expected->report);
-    report_free(&written);
-    report_free(&checked);
+    options->write = 0;
+    return passed && check_report_matches("check after write", root, options, expected->report);
+}
+
+static int run_case(const char *trees, const char *snapshots, const write_case *expected) {
+    check_options options = {NULL, NULL, 0, 0};
+    repos_snapshot snapshot = {NULL, 0};
+    char *root = test_path_join(trees, expected->name);
+    int passed = root != NULL;
+    if (passed && expected->snapshot != NULL) {
+        passed = test_snapshot_load(snapshots, expected->snapshot, &snapshot);
+        options.snapshot = &snapshot;
+        options.repository = expected->repository;
+    }
+    passed = passed && write_and_check(root, &options, expected);
+    snapshot_free(&snapshot);
     free(root);
     return passed ? 0 : 1;
 }
 
 int main(int argument_count, char **arguments) {
     const write_case *expected;
-    if (argument_count != 3) {
-        fprintf(stderr, "usage: generate_test <write-trees folder> <case>\n");
+    if (argument_count != 4) {
+        fprintf(stderr, "usage: generate_test <write-trees folder> <case> <snapshots folder>\n");
         return 2;
     }
     expected = find_case(arguments[2]);
@@ -158,5 +180,5 @@ int main(int argument_count, char **arguments) {
         fprintf(stderr, "no expectation is written for the fixture %s\n", arguments[2]);
         return 1;
     }
-    return run_case(arguments[1], expected);
+    return run_case(arguments[1], arguments[3], expected);
 }
