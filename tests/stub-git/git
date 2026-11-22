@@ -1,0 +1,9 @@
+#!/bin/sh
+for argument in "$@"; do
+    case "$argument" in
+    ':(glob)src/*.c') echo 1700000000 ;;
+    ':(glob)docs/source/src/*') echo 1698272000 ;;
+    ':(glob)lib/*.c') echo 1700000000 ;;
+    ':(glob)docs/source/lib/*') echo 1698790400 ;;
+    esac
+done

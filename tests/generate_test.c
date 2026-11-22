@@ -154,7 +154,7 @@ static int write_and_check(const char *root, check_options *options, const write
 }
 
 static int run_case(const char *trees, const char *snapshots, const write_case *expected) {
-    check_options options = {NULL, NULL, 0, 0};
+    check_options options = {NULL, NULL, 0, 0, 0};
     repos_snapshot snapshot = {NULL, 0};
     char *root = test_path_join(trees, expected->name);
     int passed = root != NULL;

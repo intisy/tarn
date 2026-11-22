@@ -47,6 +47,14 @@ int org_repos_is_line(const char *line) {
     return parse_org_line(line, &parsed);
 }
 
+char *org_repos_line_name(const char *line) {
+    org_line parsed;
+    if (!parse_org_line(line, &parsed)) {
+        return NULL;
+    }
+    return memory_copy_bytes(parsed.name, parsed.name_length);
+}
+
 /** The text a person wrote, without the marker the generator appends to a repo that does not follow. */
 static char *written_text(const char *text) {
     size_t length = strlen(text);

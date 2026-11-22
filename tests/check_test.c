@@ -35,6 +35,19 @@ typedef struct {
 #define ORG_MISPLACED(path)                                                                                          \
     "refused " path ":3 generated-kind-misplaced org-repos belongs in the root README of an org docs tree\n"
 
+/** A case listed here is judged against the newest version given beside it instead of the built-in one. */
+typedef struct {
+    const char *name;
+    int newest_version;
+} newest_case;
+
+#define ORG_MISSES(repo)                                                                                             \
+    "warned README.md:3 org-misses-repo does not list " repo ", which the snapshot gives for the org\n"
+
+static const newest_case newest_cases[] = {
+    {"older-version", 2},
+};
+
 static const snapshot_case snapshot_cases[] = {
     {"boundary-public-names-private", "intisy.snapshot", "intisy/public"},
     {"boundary-private-names-public", "intisy.snapshot", "intisy/secret"},
@@ -42,6 +55,8 @@ static const snapshot_case snapshot_cases[] = {
     {"boundary-link-into-itself", "intisy.snapshot", "intisy/old"},
     {"org-repos-stale", "intisy.snapshot", "intisy/docs"},
     {"org-repos-private", "intisy.snapshot", "intisy/records"},
+    {"org-repos-gone", "intisy.snapshot", "intisy/docs"},
+    {"org-repos-reordered", "intisy.snapshot", "intisy/docs"},
 };
 
 static const fixture_case fixture_cases[] = {
@@ -133,9 +148,18 @@ static const fixture_case fixture_cases[] = {
     {"org-repos-in-repo-tree", 1, ORG_MISPLACED("docs/README.md") SNAPSHOT_ABSENT},
     {"org-repos-line-form", 1,
      ORG_LINE_FORM("5") ORG_LINE_FORM("6") ORG_LINE_FORM("7") ORG_LINE_FORM("8") SNAPSHOT_ABSENT},
-    {"org-repos-stale", 1,
-     "refused README.md:3 generated-block-stale the block differs from the text tarn-check generates, and --write "
+    {"org-repos-stale", 0, ORG_MISSES("intisy/old") ORG_MISSES("intisy/public")},
+    {"org-repos-gone", 0,
+     "warned README.md:4 org-names-gone-repo lists intisy/gone, which the snapshot does not list\n"},
+    {"org-repos-reordered", 0,
+     "warned README.md:3 generated-block-stale the block differs from the text tarn-check generates, and --write "
      "rewrites it\n"},
+    {"older-version", 0,
+     "warned docs/VERSION:1 older-version declares tarn 1, and the newest is tarn 2, so the tree is pinned until it "
+     "moves\n" SNAPSHOT_ABSENT},
+    {"source-doc-stale", 0,
+     "warned docs/source/src:0 source-doc-stale src has commits 20 days newer than its doc, 2023-11-14 against "
+     "2023-10-25\n" SNAPSHOT_ABSENT},
     {"org-repos-private", 0, ""},
 };
 
@@ -157,6 +181,16 @@ static const snapshot_case *find_snapshot_case(const char *name) {
         }
     }
     return NULL;
+}
+
+static int newest_version_for(const char *name) {
+    size_t index;
+    for (index = 0; index < sizeof newest_cases / sizeof newest_cases[0]; index++) {
+        if (strcmp(newest_cases[index].name, name) == 0) {
+            return newest_cases[index].newest_version;
+        }
+    }
+    return 0;
 }
 
 static int check_case(const char *root, const check_options *options, const fixture_case *expected) {
@@ -184,13 +218,14 @@ static int check_case(const char *root, const check_options *options, const fixt
 
 static int run_case(const char *trees, const char *snapshots, const fixture_case *expected) {
     const snapshot_case *with_snapshot = find_snapshot_case(expected->name);
-    check_options options = {NULL, NULL, 0, 0};
+    check_options options = {NULL, NULL, 0, 0, 0};
     repos_snapshot snapshot = {NULL, 0};
     char *root = test_path_join(trees, expected->name);
     int failed;
     if (root == NULL) {
         return 1;
     }
+    options.newest_version = newest_version_for(expected->name);
     if (with_snapshot != NULL) {
         if (!test_snapshot_load(snapshots, with_snapshot->snapshot, &snapshot)) {
             free(root);

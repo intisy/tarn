@@ -2,3 +2,4 @@
 tests/trees/crlf-bom/** -text
 tests/write-trees/write-crlf-bom/** -text
 tests/snapshots/crlf-bom.snapshot -text
+tests/stub-git/git.cmd text eol=crlf

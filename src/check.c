@@ -2,6 +2,7 @@
 
 #include "context.h"
 #include "directory.h"
+#include "drift.h"
 #include "generate.h"
 #include "path.h"
 #include "walk.h"
@@ -70,16 +71,28 @@ static version_file read_version(const char *repo_root, const char *relative) {
     return version;
 }
 
-static int accept_version(report *out, const char *path, version_file version) {
+static void refuse_unknown_version(report *out, const char *path, long declared, int newest) {
+    if (newest == 1) {
+        report_add(out, SEVERITY_REFUSED, path, 1, "version-unknown",
+                   "declares tarn %ld, and this checker knows version 1 only", declared);
+    } else {
+        report_add(out, SEVERITY_REFUSED, path, 1, "version-unknown",
+                   "declares tarn %ld, and this checker knows versions 1 to %d", declared, newest);
+    }
+}
+
+static int accept_version(const check_context *context, const char *path, version_file version) {
     if (version.state == VERSION_MALFORMED) {
-        report_add(out, SEVERITY_REFUSED, path, 1, "version-malformed",
+        report_add(context->out, SEVERITY_REFUSED, path, 1, "version-malformed",
                    "the file must be exactly one line, tarn <n>");
         return 0;
     }
-    if (version.number != NEWEST_VERSION) {
-        report_add(out, SEVERITY_REFUSED, path, 1, "version-unknown",
-                   "declares tarn %ld, and this checker knows version %d only", version.number, NEWEST_VERSION);
+    if (version.number < 1 || version.number > context->newest_version) {
+        refuse_unknown_version(context->out, path, version.number, context->newest_version);
         return 0;
+    }
+    if (version.number < context->newest_version) {
+        drift_warn_older_version(context->out, path, version.number, context->newest_version);
     }
     return 1;
 }
@@ -95,24 +108,25 @@ static int decide_tree_kind(check_context *context) {
     if (repo_version.state != VERSION_ABSENT) {
         context->kind = TREE_REPO;
         context->descent_root = "docs";
-        return accept_version(context->out, "docs/VERSION", repo_version);
+        return accept_version(context, "docs/VERSION", repo_version);
     }
     if (org_version.state != VERSION_ABSENT) {
         context->kind = TREE_ORG;
         context->descent_root = "";
-        return accept_version(context->out, "VERSION", org_version);
+        return accept_version(context, "VERSION", org_version);
     }
     report_add(context->out, SEVERITY_REFUSED, "docs/VERSION", 0, "version-missing",
                "there is no docs/VERSION and no root VERSION, so this is not a tarn docs tree");
     return 0;
 }
 
-int check_context_open(const char *repo_root, report *out, check_context *context) {
+int check_context_open(const char *repo_root, int newest_version, report *out, check_context *context) {
     if (!directory_is_directory(repo_root)) {
         return -1;
     }
     memset(context, 0, sizeof *context);
     context->repo_root = repo_root;
+    context->newest_version = newest_version == 0 ? NEWEST_VERSION : newest_version;
     context->out = out;
     string_list_init(&context->code_folders);
     if (!decide_tree_kind(context)) {
@@ -148,6 +162,7 @@ static void run_checks(check_context *context, const check_options *options) {
     walk_descent_tree(context);
     if (context->kind == TREE_REPO) {
         walk_check_mirror_complete(context);
+        drift_check_source_docs(context);
     }
     if (context->snapshot == NULL) {
         warn_snapshot_absent(context->out);
@@ -164,7 +179,7 @@ int check_tree(const char *repo_root, const check_options *options, report *out)
             return CHECK_REPOSITORY_UNKNOWN;
         }
     }
-    opened = check_context_open(repo_root, out, &context);
+    opened = check_context_open(repo_root, options->newest_version, out, &context);
     if (opened < 0) {
         return CHECK_NOT_A_FOLDER;
     }

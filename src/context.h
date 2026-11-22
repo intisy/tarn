@@ -12,6 +12,7 @@ typedef enum { TREE_REPO, TREE_ORG } tree_kind;
 typedef struct {
     const char *repo_root;
     tree_kind kind;
+    int newest_version;
     const char *descent_root;
     ignore_rules ignore;
     string_list code_folders;

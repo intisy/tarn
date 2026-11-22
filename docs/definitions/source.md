@@ -28,4 +28,7 @@ The `source/` folder: the bottom of a repo's descent tree, a mirror of its sourc
    with `<name>` equal to the file's base name exactly. Non-code files and ignored folders are not listed. This is the
    one exception to the child-line form.
 6. A source doc is stale when its folder has commits newer than the doc's last commit by more than 14 days. That is a
-   warning, never a refusal.
+   warning, never a refusal: `source-doc-stale` on the doc folder, with the day count and both dates. Each side counts
+   only the files directly in its folder, since a subfolder has a doc of its own: the folder's code files (rule 3) and
+   every file of its doc folder. The checker asks the repo's git for the times; when git is missing, fails, or knows no
+   commit for either side (a fresh clone with no history, a file never committed), the folder is skipped.
