@@ -1,4 +1,5 @@
 #!/bin/sh
+[ -n "$TARN_STUB_GIT_LOG" ] && echo "$*" >> "$TARN_STUB_GIT_LOG"
 root=$2
 case "$root" in
 */) exit 0 ;;

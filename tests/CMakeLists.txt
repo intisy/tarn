@@ -130,20 +130,23 @@ add_test(NAME cli/staleness-trims-a-trailing-separator
 set_tests_properties(cli/staleness-trims-a-trailing-separator PROPERTIES
     FIXTURES_REQUIRED trees ENVIRONMENT "PATH=${TARN_STUB_GIT_PATH}")
 
-function(tarn_expect_quick_skips_git name tree)
+function(tarn_expect_git_calls name calls tree)
+    set(git_log ${CMAKE_CURRENT_BINARY_DIR}/${name}.git-log)
     add_test(NAME cli/${name}
         COMMAND ${CMAKE_COMMAND}
             -DPROGRAM=$<TARGET_FILE:tarn-check>
-            -DARGUMENTS=--quick|${TARN_TREES}/${tree}
+            "-DARGUMENTS=${ARGN}|${TARN_TREES}/${tree}"
             -DEXPECTED=0
-            "-DLACKS=source-doc-stale|staleness-skipped"
+            -DGIT_LOG=${git_log}
+            -DGIT_CALLS=${calls}
             -P ${CMAKE_CURRENT_SOURCE_DIR}/expect_exit.cmake)
     set_tests_properties(cli/${name} PROPERTIES
-        FIXTURES_REQUIRED trees ENVIRONMENT "PATH=${TARN_STUB_GIT_PATH}")
+        FIXTURES_REQUIRED trees ENVIRONMENT "PATH=${TARN_STUB_GIT_PATH};TARN_STUB_GIT_LOG=${git_log}")
 endfunction()
 
-tarn_expect_quick_skips_git(quick-skips-the-staleness-check source-doc-stale)
-tarn_expect_quick_skips_git(quick-skips-the-shallow-check source-doc-shallow)
+tarn_expect_git_calls(quick-makes-no-git-call-on-a-stale-tree none source-doc-stale --quick)
+tarn_expect_git_calls(quick-makes-no-git-call-on-a-shallow-tree none source-doc-shallow --quick)
+tarn_expect_git_calls(without-quick-the-stub-sees-git-calls some source-doc-stale --warn-only)
 
 add_executable(adopt_test adopt_test.c test_snapshot.c)
 target_link_libraries(adopt_test PRIVATE tarn_check_objects)
@@ -222,8 +225,12 @@ tarn_expect_adopt_refusal(adopt-repo-refuses-an-unwritable-folder
 
 if(CMAKE_HOST_WIN32)
     find_program(TARN_BASH bash HINTS "C:/Program Files/Git/bin" "C:/Program Files/Git/usr/bin" NO_DEFAULT_PATH)
+    if(NOT TARN_BASH)
+        message(FATAL_ERROR "the hook tests need Git Bash, not the WSL launcher in System32, and it was not found under C:/Program Files/Git")
+    endif()
+else()
+    find_program(TARN_BASH bash)
 endif()
-find_program(TARN_BASH bash)
 
 function(tarn_expect_hook name tree expected_lines)
     add_test(NAME hook/${name}
@@ -239,11 +246,17 @@ endfunction()
 
 if(TARN_BASH)
     tarn_expect_hook(prints-the-refusal missing-readme 1 "-DHAS=^refused docs/guide:0 missing-readme ")
+    tarn_expect_hook(finds-a-repo-tree-from-a-subfolder missing-readme 1 -DSTART=docs/guide
+        "-DHAS=^refused docs/guide:0 missing-readme ")
+    tarn_expect_hook(finds-an-org-tree-from-a-subfolder org-tree 1 -DSTART=guide
+        "-DHAS=^refused guide:0 missing-readme ")
     tarn_expect_hook(prints-nothing-for-a-clean-tree clean 0)
     tarn_expect_hook(prints-nothing-without-the-standard no-standard 0)
-    tarn_expect_hook(cuts-at-twenty-lines many-findings 21 -DUNLISTED=25 "-DHAS=\ntarn: 5 more lines")
+    tarn_expect_hook(cuts-at-twenty-lines many-findings 21 -DUNLISTED=25 "-DHAS=^tarn: 5 more lines")
     tarn_expect_hook(says-how-to-build-a-missing-checker missing-readme 1
         -DCHECKER=${CMAKE_CURRENT_BINARY_DIR}/no-such-checker "-DHAS=build it from intisy/tarn")
+    tarn_expect_hook(says-how-to-build-a-checker-that-is-not-executable missing-readme 1
+        -DCHECKER=${CMAKE_CURRENT_SOURCE_DIR}/hook-trees/no-standard/README.md "-DHAS=build it from intisy/tarn")
 else()
     message(WARNING "bash was not found, so the hook tests are not registered")
 endif()

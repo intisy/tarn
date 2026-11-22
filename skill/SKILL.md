@@ -25,7 +25,7 @@ The definitions of each kind of file are in `docs/definitions/` of `intisy/tarn`
   folder that has none.
 - Queue, decisions, handoff, FAQ, rules, plans, specs and records are named kinds that only an org docs tree holds.
   A repo docs tree holds descent kinds only.
-- No other file kind is allowed in a docs tree. A doc over 400 lines means the code it explains wants splitting.
+- No other file kind is allowed in a docs tree. A descent doc over 400 lines is warned: turn it into a folder with its own README, or record a size exception as its first line, `<!-- size: <reason> -->`.
 - Hand-written prose only outside `<!-- generated: <what> -->` and `<!-- end generated -->`: never edit a generated
   block, fix its source and run the writer.
 
