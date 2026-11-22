@@ -18,6 +18,8 @@ jobs:
     with:
       standard-ref: ${{ github.sha }}
       mode: check
+    secrets:
+      envPAT: ${{ secrets.TARN_TOKEN }}
 
   warn:
     if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
@@ -26,3 +28,5 @@ jobs:
       standard-ref: ${{ github.sha }}
       mode: warn
       default-branch: ${{ github.ref_name }}
+    secrets:
+      envPAT: ${{ secrets.TARN_TOKEN }}
