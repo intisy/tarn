@@ -6,3 +6,5 @@
 [An outside site](https://example.com/intisy/old) and [an unlisted repo](https://github.com/someone/else) pass.
 Naming intisy/old without a link passes.
 `[code](https://github.com/intisy/old)` is code.
+[A www host](https://www.github.com/intisy/old) is the same site.
+[A capital host](HTTPS://GitHub.com/intisy/old/) is too.

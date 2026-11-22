@@ -64,6 +64,16 @@ tarn_expect_exit(refuses-a-repository-the-snapshot-lacks 2
     --snapshot ${TARN_SNAPSHOTS}/intisy.snapshot --repository intisy/nobody ${TARN_TREES}/anchor-link)
 tarn_expect_exit(refuses-a-malformed-snapshot 2
     --snapshot ${TARN_SNAPSHOTS}/malformed.snapshot --repository intisy/tarn ${TARN_TREES}/anchor-link)
+tarn_expect_exit(refuses-a-snapshot-with-a-blank-line 2
+    --snapshot ${TARN_SNAPSHOTS}/blank-line.snapshot --repository intisy/tarn ${TARN_TREES}/anchor-link)
+tarn_expect_exit(refuses-a-snapshot-with-a-trailing-space 2
+    --snapshot ${TARN_SNAPSHOTS}/trailing-space.snapshot --repository intisy/tarn ${TARN_TREES}/anchor-link)
+tarn_expect_exit(refuses-a-snapshot-with-a-tab 2
+    --snapshot ${TARN_SNAPSHOTS}/tab.snapshot --repository intisy/tarn ${TARN_TREES}/anchor-link)
+tarn_expect_exit(refuses-a-snapshot-with-a-missing-word 2
+    --snapshot ${TARN_SNAPSHOTS}/missing-word.snapshot --repository intisy/tarn ${TARN_TREES}/anchor-link)
+tarn_expect_exit(refuses-a-snapshot-with-an-extra-word 2
+    --snapshot ${TARN_SNAPSHOTS}/extra-word.snapshot --repository intisy/tarn ${TARN_TREES}/anchor-link)
 tarn_expect_exit(refuses-a-snapshot-listing-a-repo-twice 2
     --snapshot ${TARN_SNAPSHOTS}/duplicate.snapshot --repository intisy/tarn ${TARN_TREES}/anchor-link)
 tarn_expect_exit(refuses-a-missing-snapshot 2

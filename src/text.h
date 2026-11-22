@@ -43,8 +43,6 @@ char *text_generated_what(const char *line);
  * 0). Its lines link outside the folder on purpose: not child lines, and free to link a repo that does not follow.
  */
 int text_is_org_repos_line(const char *line, int *inside);
-/** A copy of the line with every inline code span blanked to spaces, so positions stay; the caller frees it. */
-char *text_without_inline_code(const char *line);
 /** Finds the next link at or after *position, skipping inline code; returns 0 when there is none. */
 int markdown_next_link(const char *line, size_t *position, markdown_link *out);
 

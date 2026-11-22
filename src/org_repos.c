@@ -70,12 +70,19 @@ int org_repos_is_unwritten(const char *line) {
     return unwritten;
 }
 
+/** Repo names compare ignoring case, as the snapshot lookup does, so a kept text survives a change of case. */
+static int is_same_repo(const org_line *parsed, const char *full_name) {
+    char *name = memory_copy_bytes(parsed->name, parsed->name_length);
+    int same = text_equal_ignoring_case(name, full_name);
+    free(name);
+    return same;
+}
+
 static char *kept_text(const string_list *current_lines, const char *full_name) {
     size_t index;
     for (index = 0; index < current_lines->count; index++) {
         org_line parsed;
-        if (parse_org_line(current_lines->items[index], &parsed) && parsed.name_length == strlen(full_name) &&
-            strncmp(parsed.name, full_name, parsed.name_length) == 0) {
+        if (parse_org_line(current_lines->items[index], &parsed) && is_same_repo(&parsed, full_name)) {
             return written_text(parsed.text);
         }
     }

@@ -33,22 +33,28 @@ never calls the network to learn them. The docs workflow makes a snapshot of the
 over as `tarn-check --snapshot <file> --repository <owner>/<name>`, where the second names the repo being checked.
 
 1. The snapshot is a text file of one line per repo, `<owner>/<name> <public|private> <follows|not>`, and nothing
-   else: no JSON, no comments, no blank lines. A byte order mark and CRLF line endings are tolerated. `<owner>` and
+   else: no JSON, no comments, no blank lines, words separated by exactly one space (no tab, no trailing space). A
+   byte order mark and CRLF line endings are tolerated. `<owner>` and
    `<name>` hold letters, digits, `.`, `_` and `-`. `follows` means the repo has a version file of either kind (see
    `version.md`).
 2. Bad usage, exit 2: a snapshot that cannot be read, a line in another form, a repo listed twice (ignoring case), a
    `--snapshot` without `--repository` or the reverse, and a `--repository` the snapshot does not list. The visibility
    of the repo being checked is read from its own line.
-3. A doc names a repo when `<owner>/<name>` stands as a whole word in its text (not inside a longer
-   `<owner>/<name>-more` or `x/<owner>/<name>`, and a sentence's closing full stop is not part of it), or when a link
-   or a bare address points at `https://github.com/<owner>/<name>`, with any path, query or anchor after it. Names are
-   compared ignoring case, as GitHub does. Fenced code blocks and inline code are skipped.
+3. A doc names a repo when two adjacent segments of a slash-separated word in its text spell `<owner>/<name>`. So
+   `<owner>/<name>` alone names it, and so does a path into or through it (`<owner>/<name>/plans/x.md`,
+   `GitHub/<owner>/<name>`) and any address of it (`https://github.com/<owner>/<name>?tab=readme`). Each segment is
+   whole: `<owner>/<name>-more` and `my-<owner>/<name>` name nothing, and a sentence's closing full stop is not part
+   of the word. Names are compared ignoring case, as GitHub does. Fenced code blocks and inline code are read too,
+   since a name in code is published all the same; only the link rules skip code.
 4. In a repo the snapshot marks `public`, naming a repo it marks `private` is refused as `public-names-private`, once
    per repo per line. A private repo may name any repo.
-5. A link whose target is `https://github.com/<owner>/<name>`, with anything after it, into a repo the snapshot marks
-   `not` is refused as `link-into-nonstandard`. A link into a repo marked `follows`, into the repo being checked, and
-   into anything the snapshot does not list (an outside site) passes, and so do the lines of an `org-repos` block (see
-   `generated.md`), whose job is to list the repos that do not follow yet.
+5. A link whose target is `https://github.com/<owner>/<name>` (or `http://`, with or without `www.`, in any case),
+   with anything after it, into a repo the snapshot marks `not` is refused as `link-into-nonstandard`. A link into a
+   repo marked `follows`, into the repo being checked, and into anything the snapshot does not list (an outside site)
+   passes, and so do the lines of an `org-repos` block (see `generated.md`), whose job is to list the repos that do
+   not follow yet. Links inside fenced or inline code are not links and are skipped.
+   A known limit of version 1: the snapshot lists the repos of the checked repo's owner only, so a link into a repo
+   of another owner passes whether or not that repo follows, since the checker never calls the network to find out.
 6. The rules read every file the descent walk reads: each README and prose file of the tree, and a repo's
    `CONTENT.md`.
 7. Without a snapshot both rules are skipped, an `org-repos` block is left as it is, and the report says so in one

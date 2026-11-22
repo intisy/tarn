@@ -1,7 +1,7 @@
 The checker, `tarn-check`. `check_tree` reads the version file to tell a repo docs tree (`docs/VERSION`, rooted at `docs/`) from an org docs tree (a root `VERSION`, rooted at the repo root), finds every source folder that holds code, regenerates the marked blocks of the descent tree (with `--write` it rewrites the stale ones first, so the walk reads the fresh files), walks the descent tree folder by folder, checks every descent file against the repos snapshot when `--snapshot` and `--repository` give one (and warns once that it did not when they do not), and adds each finding to a report as `refused|warned <path>:<line> <rule> <text>`, where line 0 means the whole file or folder. Every path is relative to the repo root with forward slashes, and every name is compared byte for byte with the real directory entry, so a case mismatch is caught on a case-insensitive disk too. The program exits 0 when nothing is refused, 1 when something is, and 2 on bad usage.
 
 <!-- generated: source-children -->
-- [boundary.c](../../../src/boundary.c) - the two snapshot rules: a public tree naming a private repo by `<owner>/<name>` or by GitHub URL, and a link into a repo that does not follow tarn
+- [boundary.c](../../../src/boundary.c) - the two snapshot rules: a public tree naming a private repo by any two adjacent segments of a path (in code too), and a GitHub link into a repo that does not follow tarn
 - [boundary.h](../../../src/boundary.h) - the snapshot check of one document
 - [check.c](../../../src/check.c) - `check_tree`: the version files, the tree kind, the checked repo's line in the snapshot, the order of the checks (blocks first, then the walk), and the `snapshot-absent` warning
 - [check.h](../../../src/check.h) - `check_tree`, its options and its results, and the opening and closing of the context every check shares
@@ -9,7 +9,7 @@ The checker, `tarn-check`. `check_tree` reads the version file to tell a repo do
 - [directory.c](../../../src/directory.c) - the one place that talks to the OS: folder listings that never follow a folder link, and file reads, on Windows and POSIX
 - [directory.h](../../../src/directory.h) - a folder listing, sorted by byte order, with names exactly as stored
 - [generate.c](../../../src/generate.c) - the marked blocks: finding them in a file, comparing them with the regenerated text, and rewriting the stale ones in place, byte for byte outside the block
-- [generate.h](../../../src/generate.h) - `regenerate` and `generate_blocks`, the two ways in
+- [generate.h](../../../src/generate.h) - `generate_blocks`, the regeneration `check_tree` runs before the walk
 - [ignore.c](../../../src/ignore.c) - the source mirror's ignore list: the root `.gitignore` and the fixed folders
 - [ignore.h](../../../src/ignore.h) - the ignore patterns and the two questions asked of them
 - [links.c](../../../src/links.c) - the dead-link rule: every link resolved from its file, anchors dropped, case compared exactly

@@ -3,11 +3,13 @@
 #include "memory.h"
 #include "snapshot.h"
 
+#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 
+static const char *const link_schemes[] = {"https://", "http://"};
+static const char www_prefix[] = "www.";
 static const char github_host[] = "github.com/";
-static const char *const github_prefixes[] = {"https://github.com/", "http://github.com/"};
 
 /** The private repos one line has already been refused for, so a repo named twice on a line is refused once. */
 typedef struct {
@@ -24,6 +26,17 @@ typedef struct {
 
 static int is_token_character(char character) {
     return snapshot_is_name_character(character) || character == '/';
+}
+
+/** The length of prefix when text starts with it ignoring ASCII case, or 0. */
+static size_t prefix_length_ignoring_case(const char *text, const char *prefix) {
+    size_t index;
+    for (index = 0; prefix[index] != '\0'; index++) {
+        if (tolower((unsigned char)text[index]) != tolower((unsigned char)prefix[index])) {
+            return 0;
+        }
+    }
+    return index;
 }
 
 /** The length of the `<owner>/<name>` text starts with, or 0; a sentence's final full stops are not part of it. */
@@ -66,6 +79,23 @@ static void consider_name(line_scan *scan, const char *name, size_t length) {
                "names %s, which the snapshot marks private, in a public docs tree", repo->full_name);
 }
 
+/** A path names every repo two adjacent segments of it spell, so `x/<owner>/<name>/plans` names `<owner>/<name>`. */
+static void consider_segment_pairs(line_scan *scan, const char *token, size_t length) {
+    const char *first = token;
+    const char *end = token + length;
+    const char *slash = memchr(first, '/', length);
+    while (slash != NULL) {
+        const char *second = slash + 1;
+        const char *next_slash = memchr(second, '/', (size_t)(end - second));
+        const char *pair_end = next_slash == NULL ? end : next_slash;
+        if (snapshot_is_repo_name(first, (size_t)(pair_end - first))) {
+            consider_name(scan, first, (size_t)(pair_end - first));
+        }
+        first = second;
+        slash = next_slash;
+    }
+}
+
 static void scan_tokens(line_scan *scan, const char *text) {
     size_t position = 0;
     while (text[position] != '\0') {
@@ -82,50 +112,43 @@ static void scan_tokens(line_scan *scan, const char *text) {
         while (end > start && text[end - 1] == '.') {
             end--;
         }
-        if (snapshot_is_repo_name(text + start, end - start)) {
-            consider_name(scan, text + start, end - start);
-        }
-    }
-}
-
-static void scan_urls(line_scan *scan, const char *text) {
-    const char *found = strstr(text, github_host);
-    while (found != NULL) {
-        if (found == text || !snapshot_is_name_character(found[-1])) {
-            const char *name = found + sizeof github_host - 1;
-            size_t length = repo_name_length(name);
-            if (length > 0) {
-                consider_name(scan, name, length);
-            }
-        }
-        found = strstr(found + 1, github_host);
+        consider_segment_pairs(scan, text + start, end - start);
     }
 }
 
 static void check_names(const check_context *context, const char *path, const text_line *line) {
-    char *text = text_without_inline_code(line->text);
     line_scan scan;
     scan.context = context;
     scan.path = path;
     scan.line = line->number;
     scan.refused.items = NULL;
     scan.refused.count = 0;
-    scan_tokens(&scan, text);
-    scan_urls(&scan, text);
+    scan_tokens(&scan, line->text);
     free(scan.refused.items);
-    free(text);
+}
+
+/** The length of a `http(s)://[www.]github.com/` prefix of target, ignoring case as a browser does, or 0. */
+static size_t github_prefix_length(const char *target) {
+    size_t index;
+    for (index = 0; index < sizeof link_schemes / sizeof link_schemes[0]; index++) {
+        size_t scheme = prefix_length_ignoring_case(target, link_schemes[index]);
+        if (scheme > 0) {
+            size_t www = prefix_length_ignoring_case(target + scheme, www_prefix);
+            size_t host = prefix_length_ignoring_case(target + scheme + www, github_host);
+            return host == 0 ? 0 : scheme + www + host;
+        }
+    }
+    return 0;
 }
 
 static const snapshot_repo *linked_repo(const check_context *context, const char *target) {
-    size_t index;
-    for (index = 0; index < sizeof github_prefixes / sizeof github_prefixes[0]; index++) {
-        size_t prefix_length = strlen(github_prefixes[index]);
-        if (strncmp(target, github_prefixes[index], prefix_length) == 0) {
-            size_t length = repo_name_length(target + prefix_length);
-            return length == 0 ? NULL : snapshot_find(context->snapshot, target + prefix_length, length);
-        }
+    size_t prefix = github_prefix_length(target);
+    size_t length;
+    if (prefix == 0) {
+        return NULL;
     }
-    return NULL;
+    length = repo_name_length(target + prefix);
+    return length == 0 ? NULL : snapshot_find(context->snapshot, target + prefix, length);
 }
 
 static void check_links(const check_context *context, const char *path, const text_line *line) {
@@ -142,6 +165,7 @@ static void check_links(const check_context *context, const char *path, const te
     }
 }
 
+/** @implNote Names are read in code too, since a name in a code block is published all the same; links are not. */
 void boundary_check(const check_context *context, const char *path, const text_document *document) {
     unsigned char *fenced;
     int checks_names;
@@ -154,13 +178,10 @@ void boundary_check(const check_context *context, const char *path, const text_d
     checks_names = context->self->visibility == VISIBILITY_PUBLIC;
     for (index = 0; index < document->count; index++) {
         const text_line *line = &document->lines[index];
-        if (fenced[index]) {
-            continue;
-        }
         if (checks_names) {
             check_names(context, path, line);
         }
-        if (!text_is_org_repos_line(line->text, &inside_org_repos)) {
+        if (!fenced[index] && !text_is_org_repos_line(line->text, &inside_org_repos)) {
             check_links(context, path, line);
         }
     }
