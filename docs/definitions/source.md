@@ -38,3 +38,4 @@ The `source/` folder: the bottom of a repo's descent tree, a mirror of its sourc
    - a folder whose name holds a character git would read as a pattern: `*`, `?` or `[`, and `\` outside Windows;
    - every folder in a shallow clone, whose one commit dates every file alike. The report then says so once, as
      `warned .:0 staleness-skipped`. A run that wants the check fetches the full history first.
+   Under `--quick` the checker asks git nothing, so neither warning is given; it is the only thing `--quick` skips.

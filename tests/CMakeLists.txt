@@ -130,6 +130,21 @@ add_test(NAME cli/staleness-trims-a-trailing-separator
 set_tests_properties(cli/staleness-trims-a-trailing-separator PROPERTIES
     FIXTURES_REQUIRED trees ENVIRONMENT "PATH=${TARN_STUB_GIT_PATH}")
 
+function(tarn_expect_quick_skips_git name tree)
+    add_test(NAME cli/${name}
+        COMMAND ${CMAKE_COMMAND}
+            -DPROGRAM=$<TARGET_FILE:tarn-check>
+            -DARGUMENTS=--quick|${TARN_TREES}/${tree}
+            -DEXPECTED=0
+            "-DLACKS=source-doc-stale|staleness-skipped"
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/expect_exit.cmake)
+    set_tests_properties(cli/${name} PROPERTIES
+        FIXTURES_REQUIRED trees ENVIRONMENT "PATH=${TARN_STUB_GIT_PATH}")
+endfunction()
+
+tarn_expect_quick_skips_git(quick-skips-the-staleness-check source-doc-stale)
+tarn_expect_quick_skips_git(quick-skips-the-shallow-check source-doc-shallow)
+
 add_executable(adopt_test adopt_test.c test_snapshot.c)
 target_link_libraries(adopt_test PRIVATE tarn_check_objects)
 tarn_strict_warnings(adopt_test)
@@ -204,3 +219,31 @@ tarn_expect_adopt_refusal(adopt-repo-refuses-a-case-differing-folder
     adopt repo --standard-ref ${TARN_STANDARD_REF} ${TARN_ADOPT_TREES}/adopt-refuses-case-differing-folder)
 tarn_expect_adopt_refusal(adopt-repo-refuses-an-unwritable-folder
     adopt repo --standard-ref ${TARN_STANDARD_REF} --write ${TARN_ADOPT_TREES}/adopt-refuses-unwritable)
+
+if(CMAKE_HOST_WIN32)
+    find_program(TARN_BASH bash HINTS "C:/Program Files/Git/bin" "C:/Program Files/Git/usr/bin" NO_DEFAULT_PATH)
+endif()
+find_program(TARN_BASH bash)
+
+function(tarn_expect_hook name tree expected_lines)
+    add_test(NAME hook/${name}
+        COMMAND ${CMAKE_COMMAND}
+            -DBASH=${TARN_BASH}
+            -DHOOK=${PROJECT_SOURCE_DIR}/hook/session-start.sh
+            -DCHECKER=$<TARGET_FILE:tarn-check>
+            -DTREE=${CMAKE_CURRENT_SOURCE_DIR}/hook-trees/${tree}
+            -DEXPECTED_LINES=${expected_lines}
+            ${ARGN}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/expect_hook.cmake)
+endfunction()
+
+if(TARN_BASH)
+    tarn_expect_hook(prints-the-refusal missing-readme 1 "-DHAS=^refused docs/guide:0 missing-readme ")
+    tarn_expect_hook(prints-nothing-for-a-clean-tree clean 0)
+    tarn_expect_hook(prints-nothing-without-the-standard no-standard 0)
+    tarn_expect_hook(cuts-at-twenty-lines many-findings 21 -DUNLISTED=25 "-DHAS=\ntarn: 5 more lines")
+    tarn_expect_hook(says-how-to-build-a-missing-checker missing-readme 1
+        -DCHECKER=${CMAKE_CURRENT_BINARY_DIR}/no-such-checker "-DHAS=build it from intisy/tarn")
+else()
+    message(WARNING "bash was not found, so the hook tests are not registered")
+endif()

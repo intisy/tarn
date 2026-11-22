@@ -9,6 +9,7 @@ typedef struct {
     /** NULL when no snapshot was given; otherwise repository names the checked repo's line in it. */
     const repos_snapshot *snapshot;
     const char *repository;
+    /** Skips the git staleness calls, the only slow part, and nothing else. */
     int quick;
     int write;
     /** The newest version a declared one is judged against; 0 means the newest this checker knows. */

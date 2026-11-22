@@ -1,0 +1,5 @@
+The session-start reminder. `session-start.sh` walks up from the working directory to the nearest folder holding `docs/VERSION` (a repo docs tree) or a root `VERSION` reading `tarn <n>` (an org docs tree), runs `tarn-check --quick` on it (the program from `$TARN_CHECK`, else `PATH`), drops the always-present `snapshot-absent` warning, and prints at most 20 lines, with one more line saying how many it cut. In a tree without the standard it prints nothing; if the tree follows the standard but the program is missing it prints one line saying how to build it. It always exits 0, so it can never fail a session. `hook/PROPOSAL.md` holds the exact lines for the global Claude Code settings, which are added by hand and never by this repo. The sibling `skill/` folder holds only Markdown (`SKILL.md`, the agent skill for reading and writing docs under the standard), and a folder with no code is not mirrored, so it has no doc here.
+
+<!-- generated: source-children -->
+- [session-start.sh](../../../hook/session-start.sh) - finds the nearest docs tree, runs `tarn-check --quick` on it and prints at most 20 lines, always exiting 0
+<!-- end generated -->

@@ -191,7 +191,9 @@ static void run_checks(check_context *context, const check_options *options) {
     walk_descent_tree(context);
     if (context->kind == TREE_REPO) {
         walk_check_mirror_complete(context);
-        drift_check_source_docs(context);
+        if (!options->quick) {
+            drift_check_source_docs(context);
+        }
     }
     if (context->snapshot == NULL) {
         warn_snapshot_absent(context->out);
