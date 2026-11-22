@@ -17,12 +17,14 @@ endfunction()
 add_library(tarn_check_objects OBJECT
     src/check.c
     src/directory.c
+    src/generate.c
     src/ignore.c
     src/links.c
     src/memory.c
     src/path.c
     src/readme.c
     src/report.c
+    src/source_children.c
     src/rules.c
     src/string_list.c
     src/text.c

@@ -49,4 +49,6 @@ foreach(dotted_file IN LISTS dotted_files)
     file(RENAME "${dotted_file}" "${folder}/${real_name}")
 endforeach()
 
-create_directory_link()
+if(IS_DIRECTORY "${DESTINATION}/directory-link")
+    create_directory_link()
+endif()

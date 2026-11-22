@@ -1,28 +1,34 @@
-The checker, `tarn-check`. `check_tree` reads the version file to tell a repo docs tree (`docs/VERSION`, rooted at `docs/`) from an org docs tree (a root `VERSION`, rooted at the repo root), finds every source folder that holds code, walks the descent tree folder by folder, and adds each finding to a report as `refused|warned <path>:<line> <rule> <text>`, where line 0 means the whole file or folder. Every path is relative to the repo root with forward slashes, and every name is compared byte for byte with the real directory entry, so a case mismatch is caught on a case-insensitive disk too. The program exits 0 when nothing is refused, 1 when something is, and 2 on bad usage.
+The checker, `tarn-check`. `check_tree` reads the version file to tell a repo docs tree (`docs/VERSION`, rooted at `docs/`) from an org docs tree (a root `VERSION`, rooted at the repo root), finds every source folder that holds code, regenerates the marked blocks of the descent tree (with `--write` it rewrites the stale ones first, so the walk reads the fresh files), walks the descent tree folder by folder, and adds each finding to a report as `refused|warned <path>:<line> <rule> <text>`, where line 0 means the whole file or folder. Every path is relative to the repo root with forward slashes, and every name is compared byte for byte with the real directory entry, so a case mismatch is caught on a case-insensitive disk too. The program exits 0 when nothing is refused, 1 when something is, and 2 on bad usage.
 
-- [check.c](../../../src/check.c) - `check_tree`: the version files, the tree kind, and the order of the checks
+<!-- generated: source-children -->
+- [check.c](../../../src/check.c) - `check_tree`: the version files, the tree kind, and the order of the checks (blocks first, then the walk)
 - [check.h](../../../src/check.h) - `check_tree` and its options, the entry point every caller uses
 - [context.h](../../../src/context.h) - what every rule module knows about the tree being checked
 - [directory.c](../../../src/directory.c) - the one place that talks to the OS: folder listings that never follow a folder link, and file reads, on Windows and POSIX
 - [directory.h](../../../src/directory.h) - a folder listing, sorted by byte order, with names exactly as stored
+- [generate.c](../../../src/generate.c) - the marked blocks: finding them in a file, comparing them with the regenerated text, and rewriting the stale ones in place, byte for byte outside the block
+- [generate.h](../../../src/generate.h) - `regenerate` and `generate_blocks`, the two ways in
 - [ignore.c](../../../src/ignore.c) - the source mirror's ignore list: the root `.gitignore` and the fixed folders
 - [ignore.h](../../../src/ignore.h) - the ignore patterns and the two questions asked of them
 - [links.c](../../../src/links.c) - the dead-link rule: every link resolved from its file, anchors dropped, case compared exactly
 - [links.h](../../../src/links.h) - the link check of one document
-- [main.c](../../../src/main.c) - the command line: `tarn-check [--quick] [--snapshot <file>] [<repo root>]`
+- [main.c](../../../src/main.c) - the command line: `tarn-check [--quick] [--write] [--snapshot <file>] [<repo root>]`
 - [memory.c](../../../src/memory.c) - allocation that aborts instead of returning NULL
 - [memory.h](../../../src/memory.h) - the allocation helpers
 - [path.c](../../../src/path.c) - relative paths: joining, normalizing, and looking one up byte for byte
 - [path.h](../../../src/path.h) - the path helpers and the states of an exact lookup
-- [readme.c](../../../src/readme.c) - a README's form and its child lines, including the code-file lines of a `source/` README
+- [readme.c](../../../src/readme.c) - a README's form and its child lines, including the code-file lines of a `source/` README and the lines of an `org-repos` block, which are not child lines
 - [readme.h](../../../src/readme.h) - the children a README must list and where the README sits
 - [report.c](../../../src/report.c) - the report: its lines, their format and the exit code
 - [report.h](../../../src/report.h) - a finding and the report that holds them
 - [rules.c](../../../src/rules.c) - the kinds a descent folder may hold, the code extensions, and the size budget
 - [rules.h](../../../src/rules.h) - the kind of an entry and the rules read from it
+- [source_children.c](../../../src/source_children.c) - the lines of a `source-children` block, built from the real source folder, with the text of each kept by name
+- [source_children.h](../../../src/source_children.h) - the block lines and the placeholder test
 - [string_list.c](../../../src/string_list.c) - a growable list of strings
 - [string_list.h](../../../src/string_list.h) - the string list
 - [text.c](../../../src/text.c) - a file as lines (BOM and CR removed), fenced code, inline code, links and the marker comments
 - [text.h](../../../src/text.h) - the text and Markdown helpers
 - [walk.c](../../../src/walk.c) - the walk of the descent tree, the scan of the source tree, and the mirror between them
 - [walk.h](../../../src/walk.h) - the three walks `check_tree` runs
+<!-- end generated -->

@@ -6,7 +6,7 @@
 
 #define EXIT_BAD_USAGE 2
 
-static const char usage[] = "usage: tarn-check [--quick] [--snapshot <file>] [<repo root>]\n";
+static const char usage[] = "usage: tarn-check [--quick] [--write] [--snapshot <file>] [<repo root>]\n";
 
 typedef struct {
     const char *repo_root;
@@ -22,10 +22,13 @@ static int parse_command_line(int argument_count, char **arguments, command_line
     parsed->repo_root = NULL;
     parsed->options.snapshot_path = NULL;
     parsed->options.quick = 0;
+    parsed->options.write = 0;
     for (index = 1; index < argument_count; index++) {
         const char *argument = arguments[index];
         if (strcmp(argument, "--quick") == 0) {
             parsed->options.quick = 1;
+        } else if (strcmp(argument, "--write") == 0) {
+            parsed->options.write = 1;
         } else if (strcmp(argument, "--snapshot") == 0 && index + 1 < argument_count) {
             parsed->options.snapshot_path = arguments[++index];
         } else if (is_option(argument) || parsed->repo_root != NULL) {
