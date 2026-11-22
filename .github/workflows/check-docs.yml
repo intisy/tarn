@@ -10,7 +10,7 @@ on:
         required: true
         type: string
       mode:
-        description: 'check (fail on a refusal) or warn (keep the Docs drift issue)'
+        description: 'check (fail on a refusal) or warn (keep the Docs drift issue holding every finding)'
         required: false
         type: string
         default: 'check'
@@ -135,14 +135,14 @@ jobs:
         shell: bash
         run: '"$TARN_CHECK" --snapshot "$TARN_SNAPSHOT" --repository "$GITHUB_REPOSITORY" repository'
 
-      - name: Collect the warnings
+      - name: Collect the findings
         if: ${{ inputs.mode == 'warn' }}
         shell: bash
         run: |
           set -euo pipefail
           "$TARN_CHECK" --warn-only --snapshot "$TARN_SNAPSHOT" --repository "$GITHUB_REPOSITORY" repository \
-            > "$RUNNER_TEMP/warnings.txt"
-          cat "$RUNNER_TEMP/warnings.txt"
+            > "$RUNNER_TEMP/findings.txt"
+          cat "$RUNNER_TEMP/findings.txt"
 
       - name: Keep the Docs drift issue
         if: ${{ inputs.mode == 'warn' }}
@@ -152,12 +152,12 @@ jobs:
         run: |
           set -euo pipefail
           title="Docs drift"
-          warnings="$RUNNER_TEMP/warnings.txt"
+          findings="$RUNNER_TEMP/findings.txt"
           issue=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "in:title \"$title\"" \
             --json number,title --jq ".[] | select(.title == \"$title\") | .number" | head -n 1)
-          if [ -s "$warnings" ]; then
+          if [ -s "$findings" ]; then
             body="$RUNNER_TEMP/body.md"
-            { echo "tarn-check found what a single push cannot see:"; echo; echo '```'; cat "$warnings"; echo '```'; } > "$body"
+            { echo "tarn-check found what a single push cannot see:"; echo; echo '```'; cat "$findings"; echo '```'; } > "$body"
             if [ -n "$issue" ]; then
               gh issue edit "$issue" --repo "$GITHUB_REPOSITORY" --body-file "$body"
             else

@@ -9,7 +9,6 @@ on:
 
 permissions:
   contents: read
-  issues: write
 
 jobs:
   check:
@@ -23,6 +22,9 @@ jobs:
 
   warn:
     if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+    permissions:
+      contents: read
+      issues: write
     uses: ./.github/workflows/check-docs.yml
     with:
       standard-ref: ${{ github.sha }}
