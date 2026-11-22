@@ -74,6 +74,10 @@ static char *narrow(const wchar_t *wide) {
     return text;
 }
 
+static int is_real_directory(DWORD attributes) {
+    return (attributes & FILE_ATTRIBUTE_DIRECTORY) != 0 && (attributes & FILE_ATTRIBUTE_REPARSE_POINT) == 0;
+}
+
 int directory_list(const char *path, directory_listing *out) {
     size_t length = strlen(path);
     char *pattern = memory_allocate(length + 3);
@@ -98,7 +102,7 @@ int directory_list(const char *path, directory_listing *out) {
         if (is_dot_entry(name)) {
             free(name);
         } else {
-            builder_push(&builder, name, (found.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0);
+            builder_push(&builder, name, is_real_directory(found.dwFileAttributes));
         }
     } while (FindNextFileW(search, &found));
     FindClose(search);
@@ -140,6 +144,11 @@ static char *join_with_slash(const char *folder, const char *name) {
     return path;
 }
 
+static int is_real_directory(const char *path) {
+    struct stat status;
+    return lstat(path, &status) == 0 && S_ISDIR(status.st_mode);
+}
+
 int directory_list(const char *path, directory_listing *out) {
     DIR *folder = opendir(path);
     struct dirent *item;
@@ -153,7 +162,7 @@ int directory_list(const char *path, directory_listing *out) {
             continue;
         }
         full_path = join_with_slash(path, item->d_name);
-        builder_push(&builder, memory_copy_string(item->d_name), directory_is_directory(full_path));
+        builder_push(&builder, memory_copy_string(item->d_name), is_real_directory(full_path));
         free(full_path);
     }
     closedir(folder);
@@ -209,6 +218,11 @@ int directory_read_file(const char *path, char **content, size_t *length) {
         }
         capacity *= 2;
         buffer = memory_resize(buffer, capacity + 1);
+    }
+    if (ferror(file)) {
+        fclose(file);
+        free(buffer);
+        return -1;
     }
     fclose(file);
     buffer[used] = '\0';

@@ -49,6 +49,17 @@ static const fixture_case fixture_cases[] = {
     {"org-tree", 0, ""},
     {"version-malformed", 1,
      "refused docs/VERSION:1 version-malformed the file must be exactly one line, tarn <n>\n"},
+    {"directory-link", 0, ""},
+    {"version-twice", 1,
+     "refused VERSION:1 version-twice a repo carries one version file, and this one has VERSION and docs/VERSION\n"},
+    {"version-missing", 1,
+     "refused docs/VERSION:0 version-missing there is no docs/VERSION and no root VERSION, so this is not a tarn "
+     "docs tree\n"},
+    {"org-kinds", 1,
+     "refused architecture/TASKS.md:0 kind-not-allowed TASKS.md is a record, and records sit at the root of an org "
+     "docs tree only\n"
+     "refused source:0 kind-not-allowed source/ is the source mirror of a repo docs tree, and an org docs tree has "
+     "none\n"},
     {"version-unknown", 1,
      "refused docs/VERSION:1 version-unknown declares tarn 2, and this checker knows version 1 only\n"},
 };
