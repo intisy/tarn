@@ -53,7 +53,8 @@ argument `adopt` always means this command, so a repo root of that name is check
    push and pull request, `mode: warn` on a weekly schedule and on a manual run, with `standard-ref` the same commit.
    Warn mode runs `tarn-check --warn-only`, which prints every finding, refused and warned, and exits 0, so the issue
    it keeps carries a refusal that an outside change caused (a repo turned private, a target that stopped
-   following), which no push to this repo would show.
+   following), which no push to this repo would show. The caller grants `contents: read` at the top and
+   `issues: write` on the warn job alone, the one job that keeps that issue.
    Both jobs pass the repo's `TARN_TOKEN` secret as `envPAT`, the token `check-docs.yml` lists the owner's private
    repos with; without it the job token sees public repos only, so a private repo would be missing from its own
    snapshot. It never passes `secrets: inherit`, which would hand every secret to the called workflow.

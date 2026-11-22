@@ -186,8 +186,15 @@ static const caller_line caller_lines[] = {
     {"  pull_request:\n", 1},
     {"  workflow_dispatch:\n", 1},
     {"  schedule:\n", 1},
-    {"  contents: read\n", 1},
-    {"  issues: write\n", 1},
+    {"\npermissions:\n  contents: read\n\njobs:\n", 1},
+    {"\n  issues: write\n", 0},
+    {"issues: write\n", 1},
+    {"  warn:\n"
+     "    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}\n"
+     "    permissions:\n"
+     "      contents: read\n"
+     "      issues: write\n",
+     1},
     {"    uses: intisy/tarn/.github/workflows/check-docs.yml@" STANDARD_REF "\n", 2},
     {"      standard-ref: " STANDARD_REF "\n", 2},
     {"      mode: check\n", 1},
