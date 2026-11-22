@@ -158,8 +158,13 @@ static const fixture_case fixture_cases[] = {
      "warned docs/VERSION:1 older-version declares tarn 1, and the newest is tarn 2, so the tree is pinned until it "
      "moves\n" SNAPSHOT_ABSENT},
     {"source-doc-stale", 0,
+     "warned docs/source:0 source-doc-stale the repo root has commits 30 days newer than its doc, 2023-11-14 "
+     "against 2023-10-15\n"
      "warned docs/source/src:0 source-doc-stale src has commits 20 days newer than its doc, 2023-11-14 against "
      "2023-10-25\n" SNAPSHOT_ABSENT},
+    {"source-doc-shallow", 0,
+     "warned .:0 staleness-skipped the clone is shallow, so its commit dates cannot show a stale source doc and "
+     "source-doc-stale was skipped\n" SNAPSHOT_ABSENT},
     {"org-repos-private", 0, ""},
 };
 

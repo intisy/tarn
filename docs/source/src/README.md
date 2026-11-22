@@ -8,7 +8,7 @@ The checker, `tarn-check`. `check_tree` reads the version file to tell a repo do
 - [context.h](../../../src/context.h) - what every rule module knows about the tree being checked, the snapshot and the checked repo's line in it included
 - [directory.c](../../../src/directory.c) - the one place that talks to the OS: folder listings that never follow a folder link, and file reads, on Windows and POSIX
 - [directory.h](../../../src/directory.h) - a folder listing, sorted by byte order, with names exactly as stored
-- [drift.c](../../../src/drift.c) - the warnings a single push cannot see: an `org-repos` block missing a repo or naming one that left, an older declared version, and a `source/` doc whose folder has commits more than 14 days newer, asked of git through the shell
+- [drift.c](../../../src/drift.c) - the warnings a single push cannot see: an `org-repos` block missing a repo or naming one that left, an older declared version, and a `source/` doc whose folder has commits more than 14 days newer by author date, asked of git through the shell and skipped in a shallow clone
 - [drift.h](../../../src/drift.h) - the three drift checks and the staleness window
 - [generate.c](../../../src/generate.c) - the marked blocks: finding them in a file, comparing them with the regenerated text, and rewriting the stale ones in place, byte for byte outside the block
 - [generate.h](../../../src/generate.h) - `generate_blocks`, the regeneration `check_tree` runs before the walk

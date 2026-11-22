@@ -1,9 +1,28 @@
 #!/bin/sh
+root=$2
+case "$root" in
+*/) exit 0 ;;
+esac
+if [ "$3" = rev-parse ]; then
+    case "$root" in
+    *source-doc-shallow) echo true ;;
+    *) echo false ;;
+    esac
+    exit 0
+fi
+author=
+stamp=
 for argument in "$@"; do
     case "$argument" in
-    ':(glob)src/*.c') echo 1700000000 ;;
-    ':(glob)docs/source/src/*') echo 1698272000 ;;
-    ':(glob)lib/*.c') echo 1700000000 ;;
-    ':(glob)docs/source/lib/*') echo 1698790400 ;;
+    '--format=%at') author=yes ;;
+    ':(glob)*.c') stamp=1700000000 ;;
+    ':(glob)docs/source/*') stamp=1697408000 ;;
+    ':(glob)src/*.c') stamp=1700000000 ;;
+    ':(glob)docs/source/src/*') stamp=1698272000 ;;
+    ':(glob)lib/*.c') stamp=1700000000 ;;
+    ':(glob)docs/source/lib/*') stamp=1698790400 ;;
     esac
 done
+if [ -n "$author" ] && [ -n "$stamp" ]; then
+    echo "$stamp"
+fi
