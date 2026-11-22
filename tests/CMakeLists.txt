@@ -112,4 +112,20 @@ file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/stub-git/${TARN_STUB_GIT} DESTINATION ${TA
     FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/stub-git/${TARN_STUB_GIT})
 file(TO_NATIVE_PATH ${TARN_STUB_GIT_FOLDER} TARN_STUB_GIT_PATH)
-set_tests_properties(check/source-doc-stale PROPERTIES ENVIRONMENT "PATH=${TARN_STUB_GIT_PATH}")
+set_tests_properties(check/source-doc-stale check/source-doc-shallow PROPERTIES ENVIRONMENT "PATH=${TARN_STUB_GIT_PATH}")
+
+if(CMAKE_HOST_WIN32)
+    file(TO_NATIVE_PATH ${TARN_TREES}/source-doc-stale TARN_STALE_TREE)
+    set(TARN_STALE_TREE "${TARN_STALE_TREE}\\")
+else()
+    set(TARN_STALE_TREE "${TARN_TREES}/source-doc-stale/")
+endif()
+add_test(NAME cli/staleness-trims-a-trailing-separator
+    COMMAND ${CMAKE_COMMAND}
+        -DPROGRAM=$<TARGET_FILE:tarn-check>
+        -DARGUMENTS=${TARN_STALE_TREE}
+        -DEXPECTED=0
+        "-DHAS=warned docs/source/src:0 source-doc-stale src has commits 20 days"
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/expect_exit.cmake)
+set_tests_properties(cli/staleness-trims-a-trailing-separator PROPERTIES
+    FIXTURES_REQUIRED trees ENVIRONMENT "PATH=${TARN_STUB_GIT_PATH}")

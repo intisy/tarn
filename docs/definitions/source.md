@@ -30,5 +30,11 @@ The `source/` folder: the bottom of a repo's descent tree, a mirror of its sourc
 6. A source doc is stale when its folder has commits newer than the doc's last commit by more than 14 days. That is a
    warning, never a refusal: `source-doc-stale` on the doc folder, with the day count and both dates. Each side counts
    only the files directly in its folder, since a subfolder has a doc of its own: the folder's code files (rule 3) and
-   every file of its doc folder. The checker asks the repo's git for the times; when git is missing, fails, or knows no
-   commit for either side (a fresh clone with no history, a file never committed), the folder is skipped.
+   every file of its doc folder. A commit's time is its author date, since a rebase resets every committer date and
+   would make a rebased doc look fresh. The checker asks the repo's git for the times, and skips:
+   - a folder for which git is missing, fails, or knows no commit on either side (a file never committed);
+   - a folder whose path, or the repo root's path, holds a character it cannot quote safely for the shell: `"`, `'`,
+     `%`, `!` or a control character, and on Windows any non-ASCII character;
+   - a folder whose name holds a character git would read as a pattern: `*`, `?` or `[`, and `\` outside Windows;
+   - every folder in a shallow clone, whose one commit dates every file alike. The report then says so once, as
+     `warned .:0 staleness-skipped`. A run that wants the check fetches the full history first.
