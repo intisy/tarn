@@ -91,15 +91,15 @@ set_tests_properties(cli/write PROPERTIES FIXTURES_REQUIRED write-trees RESOURCE
 add_test(NAME self
     COMMAND tarn-check --snapshot ${TARN_SNAPSHOTS}/self.snapshot --repository intisy/tarn ${PROJECT_SOURCE_DIR})
 
-add_test(NAME cli/warn-only-prints-warnings-and-exits-zero
+add_test(NAME cli/warn-only-prints-every-finding-and-exits-zero
     COMMAND ${CMAKE_COMMAND}
         -DPROGRAM=$<TARGET_FILE:tarn-check>
         -DARGUMENTS=--warn-only|${TARN_TREES}/missing-readme
         -DEXPECTED=0
-        "-DHAS=^warned \\.:0 snapshot-absent "
-        -DLACKS=refused
+        "-DHAS=^refused docs/guide:0 missing-readme "
+        "-DHAS_ALSO=warned \\.:0 snapshot-absent "
         -P ${CMAKE_CURRENT_SOURCE_DIR}/expect_exit.cmake)
-set_tests_properties(cli/warn-only-prints-warnings-and-exits-zero PROPERTIES FIXTURES_REQUIRED trees)
+set_tests_properties(cli/warn-only-prints-every-finding-and-exits-zero PROPERTIES FIXTURES_REQUIRED trees)
 
 if(CMAKE_HOST_WIN32)
     set(TARN_STUB_GIT git.cmd)
