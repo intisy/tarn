@@ -1,2 +1,3 @@
 kind: generic
+title: tarn
 description: A docs standard you descend like folders, from an org architecture down to a mirror of the source tree, with a checker that keeps it true.

@@ -16,6 +16,12 @@ Blocks inside a doc that the checker writes, never a person.
    - `source-children`: the child lines of a `source/` folder's README, built from the real source folder.
    - `org-repos`: the org's list of repos, one child line each, built from the provider's list of the org's repos and
      marking which have no docs yet.
-3. The checker regenerates each block and fails on a difference between the file and the regenerated text.
-4. Blocks do not nest, and an unmatched marker is refused.
-5. Generated output never appears outside a marked block.
+3. Inside a block every line is `- [<name>](<path>) - <text>`, sorted by byte order of `<name>`. `<text>` is kept from
+   the line with the same `<name>` already in the block; a new line gets the literal text `to write`, which the checker
+   warns about as `prose-to-write`. `org-repos` lines are
+   `- [<owner>/<name>](https://github.com/<owner>/<name>) - <text>`, and a repo the visibility snapshot marks `not`
+   has ` (does not follow tarn yet)` appended by the generator.
+4. The checker skips fenced code blocks and inline code when it reads markers and lines.
+5. The checker regenerates each block and fails on a difference between the file and the regenerated text.
+6. Blocks do not nest, and an unmatched marker is refused.
+7. Generated output never appears outside a marked block.

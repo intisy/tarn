@@ -11,14 +11,18 @@ The file that declares which version of the standard a docs tree follows, and ho
 
 ## Rules
 
-1. The file is one line, `tarn <n>`, where `<n>` is a whole number. Version 1 reads `tarn 1`.
+1. The file is exactly one line, `tarn <n>`, where `<n>` is a whole number, and nothing else. Version 1 reads
+   `tarn 1`. A CRLF line ending and a missing final newline are tolerated.
 2. A repo with `docs/VERSION` is a repo docs tree rooted at `docs/`: descent kinds only, records refused.
 3. A repo with a root `VERSION` reading `tarn <n>` is an org docs tree rooted at the repo root: descent kinds plus the
    named records (`TASKS.md`, `DECISIONS.md`, `HANDOFF.md`, `FAQ.md`, `RULES.md`, `plans/`, `specs/`, `records/`). A
    public org splits this across two repos: the public one carries the descent tree, a private one the records.
-4. A `VERSION` file is not a child for `folder-readme.md`: a README need not list it.
-5. A tree declaring an older version is a pin. A pin is temporary and names the task that ends it; the reminder flags it
+4. At the root of an org tree the checker ignores every entry whose name starts with `.` (`.github/`, `.gitignore`,
+   `.gitattributes`), `LICENSE`, and `VERSION`. In a repo tree it reads `docs/` and the root `CONTENT.md` only. The
+   root `README.md` of an org tree is a descent README, not a generated one.
+5. A `VERSION` file is not a child for `folder-readme.md`: a README need not list it.
+6. A tree declaring an older version is a pin. A pin is temporary and names the task that ends it; the reminder flags it
    until it moves.
-6. Another repo or org counts as following the standard when its tree has a version file of either kind.
-7. Each version ships a change list that says exactly what to change, and, where the change is mechanical, an automatic
+7. Another repo or org counts as following the standard when its tree has a version file of either kind.
+8. Each version ships a change list that says exactly what to change, and, where the change is mechanical, an automatic
    upgrade. Version 1 has nothing to upgrade from, so the upgrade command arrives with version 2.

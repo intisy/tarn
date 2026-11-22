@@ -16,9 +16,13 @@ A category folder of a descent tree, the prose files in it, and the size budget 
 2. Two categories never cover the same question. At an org, a category links down into a repo's own docs, and a repo's
    docs links down toward its source.
 3. A prose file is one topic. It goes deeper than the README above it and never repeats it.
-4. A down-link crosses downward only: an org's docs to a repo's docs, a repo's deepest docs to its source files. It
-   crosses into another repo or org only where the target has a version file (see `version.md`).
+4. Links inside one tree may go in any direction. A link that leaves the tree goes downward only: an org's docs to a
+   repo's docs, a repo's deepest docs to its source files. It crosses into another repo or org only where the target
+   has a version file (see `version.md`).
 5. A link must resolve. A public tree never links to, or names, a private repo or path.
+6. A path in a living doc follows a move in the same commit; a path in a record keeps the form it had.
+7. A docs tree holds no code, build output or secrets, and nothing a generator can recompute outside a marked generated
+   block. A one-off prompt or a folder that no longer exists is deleted, not kept.
 
 ## Size budget
 
