@@ -257,6 +257,8 @@ if(TARN_BASH)
     tarn_expect_hook(finds-an-org-tree-from-a-subfolder org-tree 1 -DSTART=guide
         "-DHAS=^refused guide:0 missing-readme ")
     tarn_expect_hook(prints-nothing-for-a-clean-tree clean 0)
+    tarn_expect_hook(prints-nothing-in-a-family-beside-its-docs-repo family 0 -DSTART=core/src)
+    tarn_expect_hook(prints-nothing-for-a-version-that-is-not-strict loose-version 0 -DSTART=guide)
     tarn_expect_hook(prints-nothing-without-the-standard no-standard 0)
     tarn_expect_hook(cuts-at-twenty-lines many-findings 21 -DUNLISTED=25 "-DHAS=^tarn: 5 more lines")
     tarn_expect_hook(says-how-to-build-a-missing-checker missing-readme 1
