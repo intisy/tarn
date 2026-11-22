@@ -2,7 +2,7 @@ The checker, `tarn-check`. `check_tree` reads the version file to tell a repo do
 
 <!-- generated: source-children -->
 - [check.c](../../../src/check.c) - `check_tree`: the version files, the tree kind, and the order of the checks (blocks first, then the walk)
-- [check.h](../../../src/check.h) - `check_tree` and its options, the entry point every caller uses
+- [check.h](../../../src/check.h) - `check_tree` and its options, and the opening and closing of the context every check and `regenerate` share
 - [context.h](../../../src/context.h) - what every rule module knows about the tree being checked
 - [directory.c](../../../src/directory.c) - the one place that talks to the OS: folder listings that never follow a folder link, and file reads, on Windows and POSIX
 - [directory.h](../../../src/directory.h) - a folder listing, sorted by byte order, with names exactly as stored
@@ -30,5 +30,5 @@ The checker, `tarn-check`. `check_tree` reads the version file to tell a repo do
 - [text.c](../../../src/text.c) - a file as lines (BOM and CR removed), fenced code, inline code, links and the marker comments
 - [text.h](../../../src/text.h) - the text and Markdown helpers
 - [walk.c](../../../src/walk.c) - the walk of the descent tree, the scan of the source tree, and the mirror between them
-- [walk.h](../../../src/walk.h) - the three walks `check_tree` runs
+- [walk.h](../../../src/walk.h) - the three walks `check_tree` runs, and the mirror lookup the generator reuses
 <!-- end generated -->

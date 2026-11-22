@@ -114,6 +114,23 @@ static void free_blocks(generated_blocks *blocks) {
     free(blocks->items);
 }
 
+static const generated_block *find_block_of_kind(const generated_blocks *blocks, const char *what) {
+    size_t index;
+    for (index = 0; index < blocks->count; index++) {
+        if (strcmp(blocks->items[index].what, what) == 0) {
+            return &blocks->items[index];
+        }
+    }
+    return NULL;
+}
+
+static void refuse_duplicate(const generated_file *file, const text_line *line, const generated_block *first,
+                             const char *what) {
+    report_add(file->context->out, SEVERITY_REFUSED, file->path, line->number, "generated-block-duplicate",
+               "a second %s block in one file duplicates the first, which started at line %zu", what,
+               file->document.lines[first->first].number);
+}
+
 static void scan_line(const generated_file *file, size_t index, scan_state *state, generated_blocks *blocks) {
     const text_line *line = &file->document.lines[index];
     char *what = text_generated_what(line->text);
@@ -125,6 +142,11 @@ static void scan_line(const generated_file *file, size_t index, scan_state *stat
         state->well_formed = 0;
         free(what);
     } else if (what != NULL) {
+        const generated_block *first = find_block_of_kind(blocks, what);
+        if (first != NULL) {
+            refuse_duplicate(file, line, first, what);
+            state->well_formed = 0;
+        }
         state->is_open = 1;
         state->first = index;
         state->what = what;

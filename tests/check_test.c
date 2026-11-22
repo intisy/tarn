@@ -78,6 +78,9 @@ static const fixture_case fixture_cases[] = {
      "docs/source\n"},
     {"generated-org-repos", 0,
      "warned README.md:4 prose-to-write the text to write is a placeholder for a person to replace\n"},
+    {"generated-duplicate", 1,
+     "refused docs/README.md:6 generated-block-duplicate a second org-repos block in one file duplicates the first, "
+     "which started at line 4\n"},
     {"generated-fenced", 0, ""},
     {"version-unknown", 1,
      "refused docs/VERSION:1 version-unknown declares tarn 2, and this checker knows version 1 only\n"},
