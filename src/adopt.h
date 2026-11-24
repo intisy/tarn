@@ -19,7 +19,7 @@ typedef struct {
 /**
  * One line per planned file, `create <path>` or `keep <path>`, then for an org one `does-not-follow <owner>/<name>`
  * line per repo its org-repos block marks as not following. blocking names the path a refusal or a failed write is
- * about: the file a write failed on, the version file that is not tarn's, or the folder that differs only in case.
+ * about: the file a write failed on, the version file that is not tarn's, the folder that differs only in case, or the record a public org tree holds.
  */
 typedef struct {
     string_list lines;
@@ -33,7 +33,8 @@ enum {
     ADOPT_OTHER_KIND_DECLARED = -3,
     ADOPT_UNWRITABLE = -4,
     ADOPT_VERSION_FOREIGN = -5,
-    ADOPT_CASE_DIFFERS = -6
+    ADOPT_CASE_DIFFERS = -6,
+    ADOPT_RECORD_IN_PUBLIC_TREE = -7
 };
 
 void adopt_outcome_init(adopt_outcome *outcome);

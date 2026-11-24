@@ -29,6 +29,9 @@ typedef struct {
 #define LINKS_OLD(line)                                                                                              \
     "refused docs/guide.md:" line " link-into-nonstandard links into intisy/old, which the snapshot marks as not " \
     "following tarn\n"
+#define LINKS_ATTIC(line)                                             \
+    "refused docs/guide.md:" line " link-into-nonstandard links into intisy/attic, which the snapshot marks as not " \
+    "following tarn\n"
 #define ORG_LINE_FORM(line)                                                                                          \
     "refused README.md:" line " generated-line-form an org-repos line reads - [<owner>/<name>]"                    \
     "(https://github.com/<owner>/<name>) - <text>\n"
@@ -52,6 +55,7 @@ static const snapshot_case snapshot_cases[] = {
     {"boundary-public-names-private", "intisy.snapshot", "intisy/public"},
     {"boundary-private-names-public", "intisy.snapshot", "intisy/secret"},
     {"boundary-link-into-nonstandard", "intisy.snapshot", "intisy/public"},
+    {"boundary-link-git-suffix", "intisy.snapshot", "intisy/public"},
     {"boundary-link-into-itself", "intisy.snapshot", "intisy/old"},
     {"org-repos-stale", "intisy.snapshot", "intisy/docs"},
     {"org-repos-private", "intisy.snapshot", "intisy/records"},
@@ -59,6 +63,8 @@ static const snapshot_case snapshot_cases[] = {
     {"org-repos-reordered", "intisy.snapshot", "intisy/docs"},
     {"org-records-public", "intisy.snapshot", "intisy/docs"},
     {"org-records-private", "intisy.snapshot", "intisy/records"},
+    {"boundary-archived", "archived.snapshot", "intisy/docs"},
+    {"org-repos-archived", "archived.snapshot", "intisy/docs"},
 };
 
 static const fixture_case fixture_cases[] = {
@@ -150,6 +156,7 @@ static const fixture_case fixture_cases[] = {
              NAMES_SECRET("17") NAMES_SECRET("18")},
     {"boundary-private-names-public", 0, ""},
     {"boundary-link-into-nonstandard", 1, LINKS_OLD("3") LINKS_OLD("4") LINKS_OLD("9") LINKS_OLD("10")},
+    {"boundary-link-git-suffix", 1, LINKS_OLD("3") LINKS_OLD("4")},
     {"boundary-link-into-itself", 0, ""},
     {"boundary-without-snapshot", 0, SNAPSHOT_ABSENT},
     {"org-repos-misplaced", 1, ORG_MISPLACED("architecture/README.md") SNAPSHOT_ABSENT},
@@ -184,6 +191,11 @@ static const fixture_case fixture_cases[] = {
      "refused plans:0 record-in-public-tree plans/ is a record, and a public org docs tree holds none; records live "
      "in the org's private records repo\n"},
     {"org-records-private", 0, ""},
+    {"boundary-archived", 1,
+     "refused docs/guide.md:3 public-names-private names intisy/vault, which the snapshot marks private, in a public "
+     "docs tree\n"
+     LINKS_ATTIC("4")},
+    {"org-repos-archived", 0, ""},
 };
 
 static const fixture_case *find_case(const char *name) {

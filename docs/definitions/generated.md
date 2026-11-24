@@ -16,8 +16,8 @@ Blocks inside a doc that the checker writes, never a person.
    - `source-children`: the child lines of a `source/` folder's README, built from the real source folder.
    - `org-repos`: the org's list of repos, one line each, built from the repos snapshot (see `category.md`) and
      marking which do not follow the standard yet. It lists every repo the snapshot gives for the owner of the repo
-     being checked, except that repo itself; when that repo is public it lists the public repos only, so the block
-     never names a private repo in a public tree.
+     being checked, except that repo itself and the repos the snapshot marks `archived`; when that repo is public it
+     lists the public repos only, so the block never names a private repo in a public tree.
 3. Inside a block every line is `- [<name>](<path>) - <text>`, sorted by byte order of `<name>` as
    written, a folder's trailing slash included (so `a.c` sorts before `a/`). `<text>` is kept from the line with the
    same `<name>` already in the block; a new line gets the literal text `to write`, which the checker

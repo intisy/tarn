@@ -120,8 +120,8 @@ static int load_snapshot(const char *path, repos_snapshot *snapshot) {
     if (status == SNAPSHOT_UNREADABLE) {
         fprintf(stderr, "tarn-check: the snapshot %s cannot be read\n", path);
     } else if (status == SNAPSHOT_MALFORMED) {
-        fprintf(stderr, "tarn-check: %s:%zu does not read <owner>/<name> <public|private> <follows|not>\n", path,
-                bad_line);
+        fprintf(stderr, "tarn-check: %s:%zu does not read <owner>/<name> <public|private> <follows|not|archived>\n",
+                path, bad_line);
     } else if (status == SNAPSHOT_DUPLICATE) {
         fprintf(stderr, "tarn-check: %s:%zu lists a repo a second time\n", path, bad_line);
     }
@@ -169,6 +169,11 @@ static int report_adopt_refusal(const adopt_command *parsed, int result, const a
     if (result == ADOPT_CASE_DIFFERS) {
         fprintf(stderr, "tarn-check: %s/%s exists only under another case, so adoption cannot write into it\n",
                 parsed->repo_root, outcome->blocking);
+        return EXIT_NOT_ADOPTED;
+    }
+    if (result == ADOPT_RECORD_IN_PUBLIC_TREE) {
+        fprintf(stderr, "tarn-check: %s/%s is a record, and a public org docs tree holds none\n", parsed->repo_root,
+                outcome->blocking);
         return EXIT_NOT_ADOPTED;
     }
     fprintf(stderr, "tarn-check: %s is already %s, so it cannot adopt as %s\n", parsed->repo_root,
