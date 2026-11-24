@@ -31,6 +31,9 @@ The file that declares which version of the standard a docs tree follows, and ho
    hook reads a root `VERSION` the same way.
 8. Each version ships a change list that says exactly what to change, and, where the change is mechanical, an automatic
    upgrade. Version 1 has nothing to upgrade from, so the upgrade command arrives with version 2.
+9. Version 1 is final. The weivel org proved it on 2026-11-24: its repos adopted it, and a reader holding only their
+   docs answered every question of a fifteen-question set, graded against the code, with no change to a definition.
+   A change to a definition from here on ships as version 2.
 
 ## Adopting
 
