@@ -120,11 +120,15 @@ jobs:
           else
             listing="users/$OWNER/repos?type=owner&per_page=100"
           fi
-          gh api --paginate "$listing" --jq '.[] | select(.archived | not) | .full_name + " " + (if .visibility == "public" then "public" else "private" end)' \
+          gh api --paginate "$listing" --jq '.[] | .full_name + " " + (if .visibility == "public" then "public" else "private" end) + " " + (if .archived then "archived" else "live" end)' \
             > "$RUNNER_TEMP/repos.txt"
           : > "$snapshot"
-          while read -r name visibility; do
-            follows=$(follows_tarn "$name")
+          while read -r name visibility state; do
+            if [ "$state" = archived ]; then
+              follows=archived
+            else
+              follows=$(follows_tarn "$name")
+            fi
             echo "$name $visibility $follows" >> "$snapshot"
           done < "$RUNNER_TEMP/repos.txt"
           echo "TARN_SNAPSHOT=$snapshot" >> "$GITHUB_ENV"
