@@ -162,6 +162,7 @@ static const snapshot_repo *linked_repo(const check_context *context, const char
         return NULL;
     }
     length = repo_name_length(target + prefix);
+    length = without_clone_suffix(target + prefix, length);
     return length == 0 ? NULL : snapshot_find(context->snapshot, target + prefix, length);
 }
 

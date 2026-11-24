@@ -51,8 +51,8 @@ over as `tarn-check --snapshot <file> --repository <owner>/<name>`, where the se
 4. In a repo the snapshot marks `public`, naming a repo it marks `private` is refused as `public-names-private`, once
    per repo per line. A private repo may name any repo.
 5. A link whose target is `https://github.com/<owner>/<name>` (or `http://`, with or without `www.`, in any case),
-   with anything after it, into a repo the snapshot marks `not` is refused as `link-into-nonstandard`. A link into a
-   repo marked `follows`, into the repo being checked, and into anything the snapshot does not list (an outside site)
+   with anything after it, a clone URL's `.git` ending the name included, into a repo the snapshot marks `not` is
+   refused as `link-into-nonstandard`. A link into a repo marked `follows`, into the repo being checked, and into anything the snapshot does not list (an outside site)
    passes, and so do the lines of an `org-repos` block (see `generated.md`), whose job is to list the repos that do
    not follow yet. Links inside fenced or inline code are not links and are skipped.
    A known limit of version 1: the snapshot lists the repos of the checked repo's owner only, so a link into a repo
