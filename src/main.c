@@ -171,6 +171,11 @@ static int report_adopt_refusal(const adopt_command *parsed, int result, const a
                 parsed->repo_root, outcome->blocking);
         return EXIT_NOT_ADOPTED;
     }
+    if (result == ADOPT_RECORD_IN_PUBLIC_TREE) {
+        fprintf(stderr, "tarn-check: %s/%s is a record, and a public org docs tree holds none\n", parsed->repo_root,
+                outcome->blocking);
+        return EXIT_NOT_ADOPTED;
+    }
     fprintf(stderr, "tarn-check: %s is already %s, so it cannot adopt as %s\n", parsed->repo_root,
             as_repo ? "an org docs tree (VERSION)" : "a repo docs tree (docs/VERSION)", as_repo ? "a repo" : "an org");
     return EXIT_NOT_ADOPTED;

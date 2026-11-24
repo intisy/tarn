@@ -469,9 +469,31 @@ static int write_plan(const char *repo_root, const adoption_plan *plan, adopt_ou
     return ADOPT_DONE;
 }
 
+/** The name of the first record at the root of a public org tree as a new string the caller frees, or NULL. */
+static char *first_record_in_public_tree(const check_context *context) {
+    directory_listing listing;
+    char *found = NULL;
+    size_t index;
+    if (context->kind != TREE_ORG || directory_list(context->repo_root, &listing) != 0) {
+        return NULL;
+    }
+    for (index = 0; found == NULL && index < listing.count; index++) {
+        if (rules_classify(context, context->descent_root, &listing.entries[index]) == ENTRY_RECORD_IN_PUBLIC_TREE) {
+            found = memory_copy_string(listing.entries[index].name);
+        }
+    }
+    directory_listing_free(&listing);
+    return found;
+}
+
 static int run_adoption(check_context *context, const adopt_options *options, adopt_outcome *outcome) {
     adoption_plan plan = {NULL, 0, NULL};
     int result = ADOPT_DONE;
+    char *record = first_record_in_public_tree(context);
+    if (record != NULL) {
+        outcome->blocking = record;
+        return ADOPT_RECORD_IN_PUBLIC_TREE;
+    }
     if (context->kind == TREE_REPO) {
         plan_repo(context, options->standard_ref, &plan);
     } else {

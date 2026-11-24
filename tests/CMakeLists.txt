@@ -218,6 +218,9 @@ endfunction()
 tarn_expect_adopt_refusal(adopt-org-refuses-a-foreign-version
     adopt org --standard-ref ${TARN_STANDARD_REF} --snapshot ${TARN_SNAPSHOTS}/intisy.snapshot --repository intisy/docs
     ${TARN_ADOPT_TREES}/adopt-refuses-foreign-version)
+tarn_expect_adopt_refusal(adopt-org-refuses-a-public-repo-holding-records
+    adopt org --standard-ref ${TARN_STANDARD_REF} --snapshot ${TARN_SNAPSHOTS}/intisy.snapshot --repository intisy/public
+    ${TARN_ADOPT_TREES}/adopt-refuses-public-records)
 tarn_expect_adopt_refusal(adopt-repo-refuses-a-case-differing-folder
     adopt repo --standard-ref ${TARN_STANDARD_REF} ${TARN_ADOPT_TREES}/adopt-refuses-case-differing-folder)
 tarn_expect_adopt_refusal(adopt-repo-refuses-an-unwritable-folder
