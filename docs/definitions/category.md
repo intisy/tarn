@@ -10,9 +10,9 @@ A category folder of a descent tree, the prose files in it, and the size budget 
 
 ## Rules
 
-1. A category is a folder holding a `README.md` (see `folder-readme.md`), prose `.md` files and subfolders, under any name.
-   Nothing else is allowed in it: no code, no plans, no tasks, no generated output except marked generated blocks (see
-   `generated.md`).
+1. A category is a folder holding a `README.md` (see `folder-readme.md`), prose `.md` files and subfolders, under any
+   name. Nothing else is allowed in it: no code, no plans, no tasks, no generated output except marked generated blocks
+   (see `generated.md`).
 2. Two categories never cover the same question. At an org, a category links down into a repo's own docs, and a repo's
    docs links down toward its source.
 3. A prose file is one topic. It goes deeper than the README above it and never repeats it.
@@ -33,11 +33,11 @@ never calls the network to learn them. The docs workflow makes a snapshot of the
 over as `tarn-check --snapshot <file> --repository <owner>/<name>`, where the second names the repo being checked.
 
 1. The snapshot is a text file of one line per repo, `<owner>/<name> <public|private> <follows|not|archived>`, and
-   nothing else: no JSON, no comments, no blank lines, words separated by exactly one space (no tab, no trailing space). A
-   byte order mark and CRLF line endings are tolerated. `<owner>` and
-   `<name>` hold letters, digits, `.`, `_` and `-`. `follows` means the repo has a version file of either kind (see
-   `version.md`). `archived` means the repo is archived on the provider, whatever else is true of it: it exists, with the
-   visibility stated, for every rule below, and it counts as not following, since an archived repo is never migrated.
+   nothing else: no JSON, no comments, no blank lines, words separated by exactly one space (no tab, no trailing
+   space). A byte order mark and CRLF line endings are tolerated. `<owner>` and `<name>` hold letters, digits, `.`, `_`
+   and `-`. `follows` means the repo has a version file of either kind (see `version.md`). `archived` means the repo is
+   archived on the provider, whatever else is true of it: it exists, with the visibility stated, for every rule below,
+   and it counts as not following, since an archived repo is never migrated.
    It is the one state that is left out of the `org-repos` map and its warnings (see `generated.md`).
 2. Bad usage, exit 2: a snapshot that cannot be read, a line in another form, a repo listed twice (ignoring case), a
    `--snapshot` without `--repository` or the reverse, and a `--repository` the snapshot does not list. The visibility
@@ -54,9 +54,10 @@ over as `tarn-check --snapshot <file> --repository <owner>/<name>`, where the se
    per repo per line. A private repo may name any repo.
 5. A link whose target is `https://github.com/<owner>/<name>` (or `http://`, with or without `www.`, in any case),
    with anything after it, a clone URL's `.git` ending the name included, into a repo the snapshot marks `not` is
-   refused as `link-into-nonstandard`. A link into a repo marked `follows`, into the repo being checked, and into anything the snapshot does not list (an outside site)
-   passes, and so do the lines of an `org-repos` block (see `generated.md`), whose job is to list the repos that do
-   not follow yet. Links inside fenced or inline code are not links and are skipped.
+   refused as `link-into-nonstandard`. A link into a repo marked `follows`, into the repo being checked, and into
+   anything the snapshot does not list (an outside site) passes, and so do the lines of an `org-repos` block (see
+   `generated.md`), whose job is to list the repos that do not follow yet. Links inside fenced or inline code are not
+   links and are skipped.
    A known limit of version 1: the snapshot lists the repos of the checked repo's owner only, so a link into a repo
    of another owner passes whether or not that repo follows, since the checker never calls the network to find out.
 6. The rules read every file the descent walk reads: each README and prose file of the tree, and a repo's
