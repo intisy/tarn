@@ -31,6 +31,9 @@ The file that declares which version of the standard a docs tree follows, and ho
    hook reads a root `VERSION` the same way.
 8. Each version ships a change list that says exactly what to change, and, where the change is mechanical, an automatic
    upgrade. Version 1 has nothing to upgrade from, so the upgrade command arrives with version 2.
+9. Version 1 is final. The weivel org proved it on 2026-11-24: its repos adopted it, and a reader holding only their
+   docs answered every question of a fifteen-question set, graded against the code, with no change to a definition.
+   A change to a definition from here on ships as version 2.
 
 ## Adopting
 
@@ -68,8 +71,9 @@ argument `adopt` always means this command, so a repo root of that name is check
    the version file it would write exists and does not read `tarn <n>` (a project's own `VERSION` reading `1.2.3`, for
    `org`), when a folder it would write into exists only under another case (`Docs/` where it plans `docs/`), when
    `adopt org` is given a repo the snapshot marks `public` whose root holds a record (see `records.md`), since a public
-   org tree holds none (`record-in-public-tree`), and when a file cannot be written. In the first four cases it prints
-   no plan and writes nothing; on a failed write it has printed the plan, and the files after the one that failed are
-   not written.
+   org tree holds none, and when a file cannot be written. The record's refusal is a plain message, `<path> is a
+   record, and a public org docs tree holds none`, without the checker's code `record-in-public-tree`. In the first
+   four cases it prints no plan and writes nothing; on a failed write it has printed the plan, and the files after the
+   one that failed are not written.
 7. An adopted tree with nothing kept passes `tarn-check` with only warned `prose-to-write` lines, and `snapshot-absent`
    when it is checked without a snapshot.
