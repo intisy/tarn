@@ -29,6 +29,9 @@ typedef struct {
 #define LINKS_OLD(line)                                                                                              \
     "refused docs/guide.md:" line " link-into-nonstandard links into intisy/old, which the snapshot marks as not " \
     "following tarn\n"
+#define LINKS_ATTIC(line)                                             \
+    "refused docs/guide.md:" line " link-into-nonstandard links into intisy/attic, which the snapshot marks as not " \
+    "following tarn\n"
 #define ORG_LINE_FORM(line)                                                                                          \
     "refused README.md:" line " generated-line-form an org-repos line reads - [<owner>/<name>]"                    \
     "(https://github.com/<owner>/<name>) - <text>\n"
@@ -60,6 +63,8 @@ static const snapshot_case snapshot_cases[] = {
     {"org-repos-reordered", "intisy.snapshot", "intisy/docs"},
     {"org-records-public", "intisy.snapshot", "intisy/docs"},
     {"org-records-private", "intisy.snapshot", "intisy/records"},
+    {"boundary-archived", "archived.snapshot", "intisy/docs"},
+    {"org-repos-archived", "archived.snapshot", "intisy/docs"},
 };
 
 static const fixture_case fixture_cases[] = {
@@ -186,6 +191,11 @@ static const fixture_case fixture_cases[] = {
      "refused plans:0 record-in-public-tree plans/ is a record, and a public org docs tree holds none; records live "
      "in the org's private records repo\n"},
     {"org-records-private", 0, ""},
+    {"boundary-archived", 1,
+     "refused docs/guide.md:3 public-names-private names intisy/vault, which the snapshot marks private, in a public "
+     "docs tree\n"
+     LINKS_ATTIC("4")},
+    {"org-repos-archived", 0, ""},
 };
 
 static const fixture_case *find_case(const char *name) {

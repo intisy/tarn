@@ -5,12 +5,14 @@
 
 typedef enum { VISIBILITY_PUBLIC, VISIBILITY_PRIVATE } repo_visibility;
 
-/** One line of the repos snapshot, `<owner>/<name> <public|private> <follows|not>`. */
+/** One line of the repos snapshot, `<owner>/<name> <public|private> <follows|not|archived>`. */
 typedef struct {
     char *full_name;
     size_t owner_length;
     repo_visibility visibility;
+    /** An archived repo never follows, and no org-repos block lists it. */
     int follows;
+    int archived;
 } snapshot_repo;
 
 typedef struct {

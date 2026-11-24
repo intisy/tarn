@@ -120,8 +120,8 @@ static int load_snapshot(const char *path, repos_snapshot *snapshot) {
     if (status == SNAPSHOT_UNREADABLE) {
         fprintf(stderr, "tarn-check: the snapshot %s cannot be read\n", path);
     } else if (status == SNAPSHOT_MALFORMED) {
-        fprintf(stderr, "tarn-check: %s:%zu does not read <owner>/<name> <public|private> <follows|not>\n", path,
-                bad_line);
+        fprintf(stderr, "tarn-check: %s:%zu does not read <owner>/<name> <public|private> <follows|not|archived>\n",
+                path, bad_line);
     } else if (status == SNAPSHOT_DUPLICATE) {
         fprintf(stderr, "tarn-check: %s:%zu lists a repo a second time\n", path, bad_line);
     }

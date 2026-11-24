@@ -32,11 +32,13 @@ Rules 4 and 5 depend on facts outside the tree: which repos are private and whic
 never calls the network to learn them. The docs workflow makes a snapshot of them with the provider's API and hands it
 over as `tarn-check --snapshot <file> --repository <owner>/<name>`, where the second names the repo being checked.
 
-1. The snapshot is a text file of one line per repo, `<owner>/<name> <public|private> <follows|not>`, and nothing
-   else: no JSON, no comments, no blank lines, words separated by exactly one space (no tab, no trailing space). A
+1. The snapshot is a text file of one line per repo, `<owner>/<name> <public|private> <follows|not|archived>`, and
+   nothing else: no JSON, no comments, no blank lines, words separated by exactly one space (no tab, no trailing space). A
    byte order mark and CRLF line endings are tolerated. `<owner>` and
    `<name>` hold letters, digits, `.`, `_` and `-`. `follows` means the repo has a version file of either kind (see
-   `version.md`).
+   `version.md`). `archived` means the repo is archived on the provider, whatever else is true of it: it exists, with the
+   visibility stated, for every rule below, and it counts as not following, since an archived repo is never migrated.
+   It is the one state that is left out of the `org-repos` map and its warnings (see `generated.md`).
 2. Bad usage, exit 2: a snapshot that cannot be read, a line in another form, a repo listed twice (ignoring case), a
    `--snapshot` without `--repository` or the reverse, and a `--repository` the snapshot does not list. The visibility
    of the repo being checked is read from its own line.

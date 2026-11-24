@@ -98,7 +98,7 @@ static char *kept_text(const string_list *current_lines, const char *full_name) 
 
 int org_repos_is_listed(const check_context *context, const snapshot_repo *repo) {
     const snapshot_repo *self = context->self;
-    return repo != self && snapshot_same_owner(repo, self) &&
+    return !repo->archived && repo != self && snapshot_same_owner(repo, self) &&
            (self->visibility == VISIBILITY_PRIVATE || repo->visibility == VISIBILITY_PUBLIC);
 }
 

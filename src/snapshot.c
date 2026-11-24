@@ -91,13 +91,15 @@ static int parse_line(const char *line, snapshot_repo *repo) {
     if (!word_is(&words[1], "public") && !word_is(&words[1], "private")) {
         return 0;
     }
-    if (!word_is(&words[2], "follows") && !word_is(&words[2], "not")) {
+    if (!word_is(&words[2], "follows") && !word_is(&words[2], "not") &&
+        !word_is(&words[2], "archived")) {
         return 0;
     }
     repo->full_name = memory_copy_bytes(words[0].start, words[0].length);
     repo->owner_length = (size_t)((const char *)memchr(words[0].start, '/', words[0].length) - words[0].start);
     repo->visibility = word_is(&words[1], "public") ? VISIBILITY_PUBLIC : VISIBILITY_PRIVATE;
     repo->follows = word_is(&words[2], "follows");
+    repo->archived = word_is(&words[2], "archived");
     return 1;
 }
 
